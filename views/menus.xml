@@ -7,6 +7,14 @@
 
     <menuitem id="menu_ecm_root" name="ECM" sequence="55" web_icon="afr_ecm,static/description/icon.png"/>
 
+    <!-- Reparenta o menu "Documents" (tree-explorer jstree) do dms_field
+         para dentro de ECM, já que o menu raiz dms foi ocultado. -->
+    <record id="dms_field.dms_storage_menu" model="ir.ui.menu">
+        <field name="parent_id" ref="afr_ecm.menu_ecm_root"/>
+        <field name="name">Explorer</field>
+        <field name="sequence">5</field>
+    </record>
+
     <menuitem id="menu_ecm_documents" name="Documentos" parent="menu_ecm_root" action="dms.action_dms_file" sequence="10"/>
     <menuitem id="menu_ecm_directories" name="Pastas" parent="menu_ecm_root" action="dms.action_dms_directory" sequence="20"/>
     <menuitem id="menu_ecm_phys_loc" name="Localizações Físicas" parent="menu_ecm_root" action="action_phys_loc" sequence="30"/>

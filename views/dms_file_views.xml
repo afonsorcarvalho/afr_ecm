@@ -114,12 +114,31 @@
         </field>
     </record>
 
+    <!-- Espelho do search ECM aplicado na search_dms_file_migration
+         (criada pelo módulo dms_field). Ambas search views existem
+         no DB; algumas actions usam uma, outras usam outra. -->
+    <record id="view_dms_file_search_ecm_migration" model="ir.ui.view">
+        <field name="name">dms.file.search.ecm.migration</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.search_dms_file_migration"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="filter_domain">['|', ('name','ilike',self), ('ocr_text','ilike',self)]</attribute>
+                <attribute name="string">Nome ou texto OCR</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_dms_file_search_ecm" model="ir.ui.view">
         <field name="name">dms.file.search.ecm</field>
         <field name="model">dms.file</field>
         <field name="inherit_id" ref="dms.search_dms_file"/>
         <field name="arch" type="xml">
-            <xpath expr="//search" position="inside">
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="filter_domain">['|', ('name','ilike',self), ('ocr_text','ilike',self)]</attribute>
+                <attribute name="string">Nome ou texto OCR</attribute>
+            </xpath>
+            <xpath expr="//searchpanel" position="before">
                 <field name="document_type_id"/>
                 <field name="physical_location_id"/>
                 <filter name="ecm_public" string="Público" domain="[('confidentiality','=','public')]"/>

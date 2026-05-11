@@ -27,6 +27,14 @@
             <field name="value">200</field>
         </record>
 
+        <!-- Acelera o cron padrão do queue_job_cron_jobrunner (default OCA = 1 dia).
+             noupdate=1 do queue_job_cron_jobrunner não bloqueia este record pois
+             usamos a ref do módulo; sobrescreve interval. -->
+        <record id="queue_job_cron_jobrunner.queue_job_cron" model="ir.cron">
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+        </record>
+
         <record id="cron_ocr_backlog" model="ir.cron">
             <field name="name">AFR ECM: reenfileira jobs OCR pendentes/falhos</field>
             <field name="model_id" ref="dms.model_dms_file"/>

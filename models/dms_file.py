@@ -161,6 +161,31 @@ class DmsFile(models.Model):
     )
 
     # ------------------------------------------------------------------
+    # Search override — inclui ocr_text na busca por nome
+    # ------------------------------------------------------------------
+    @api.model
+    def _name_search(self, name, args=None, operator="ilike", limit=100,
+                     name_get_uid=None):
+        args = list(args or [])
+        if name and operator in ("ilike", "=ilike", "like", "=", "=like"):
+            # busca em name OU ocr_text
+            domain = [
+                "|",
+                ("name", operator, name),
+                ("ocr_text", operator, name),
+            ]
+            ids = list(
+                self._search(
+                    domain + args, limit=limit, access_rights_uid=name_get_uid
+                )
+            )
+            return ids
+        return super()._name_search(
+            name, args=args, operator=operator, limit=limit,
+            name_get_uid=name_get_uid,
+        )
+
+    # ------------------------------------------------------------------
     # Onchange / overrides básicos
     # ------------------------------------------------------------------
     @api.onchange("document_type_id")

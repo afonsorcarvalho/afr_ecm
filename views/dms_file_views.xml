@@ -82,6 +82,11 @@
                 <field name="document_type_id" optional="show"/>
                 <field name="confidentiality" optional="show"/>
                 <field name="physical_location_id" optional="hide"/>
+                <field name="expiration_date" optional="hide"/>
+                <field name="expiration_status" optional="hide"
+                       decoration-danger="expiration_status == 'expired'"
+                       decoration-warning="expiration_status == 'critical'"
+                       decoration-info="expiration_status == 'warning'"/>
             </field>
         </field>
     </record>
@@ -99,7 +104,9 @@
                 <filter name="ecm_restricted" string="Restrito" domain="[('confidentiality','=','restricted')]"/>
                 <filter name="ecm_confidential" string="Confidencial" domain="[('confidentiality','=','confidential')]"/>
                 <separator/>
-                <filter name="ecm_expired" string="Vencidos" domain="[('expiration_date','&lt;', context_today())]"/>
+                <filter name="ecm_expired" string="Vencidos" domain="[('expiration_status','=','expired')]"/>
+                <filter name="ecm_critical" string="Vence ≤ 7 dias" domain="[('expiration_status','=','critical')]"/>
+                <filter name="ecm_warning" string="Vence ≤ 30 dias" domain="[('expiration_status','=','warning')]"/>
                 <group expand="0" string="Agrupar Por">
                     <filter name="g_doc_type" string="Tipo" context="{'group_by':'document_type_id'}"/>
                     <filter name="g_conf" string="Confidencialidade" context="{'group_by':'confidentiality'}"/>

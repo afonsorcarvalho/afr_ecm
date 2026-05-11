@@ -9,5 +9,14 @@
             <field name="delay_unit">days</field>
             <field name="res_model">dms.file</field>
         </record>
+
+        <record id="mail_activity_data_expiration" model="mail.activity.type">
+            <field name="name">Vencimento de Documento ECM</field>
+            <field name="summary">Documento próximo do vencimento</field>
+            <field name="icon">fa-clock-o</field>
+            <field name="delay_count">0</field>
+            <field name="delay_unit">days</field>
+            <field name="res_model">dms.file</field>
+        </record>
     </data>
 </odoo>

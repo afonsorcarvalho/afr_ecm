@@ -1,7 +1,13 @@
+import logging
+from datetime import date, timedelta
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from .document_type import CONFIDENTIALITY
+
+
+_logger = logging.getLogger(__name__)
 
 
 APPROVAL_STATE = [
@@ -11,13 +17,22 @@ APPROVAL_STATE = [
     ("rejected", "Rejeitado"),
 ]
 
+EXPIRATION_STATUS = [
+    ("none", "Sem vencimento"),
+    ("ok", "Em dia"),
+    ("warning", "Atenção"),
+    ("critical", "Crítico"),
+    ("expired", "Vencido"),
+]
+
 # Campos cuja escrita NÃO é considerada alteração de conteúdo
-# (logging, chatter, activities, audit, próprio workflow).
+# (logging, chatter, activities, audit, próprio workflow, expiração).
 _APPROVAL_META_FIELDS = frozenset(
     [
         "approval_state",
         "current_level_id",
         "approval_action_ids",
+        "last_expiration_alert",
         "message_ids",
         "message_follower_ids",
         "message_partner_ids",
@@ -70,7 +85,23 @@ class DmsFile(models.Model):
     expiration_date = fields.Date(
         string="Vencimento",
         index=True,
-        help="Usado em fases futuras para alertas e expiração automática.",
+        tracking=True,
+        help="Data de vencimento do documento. Cron alerta nas janelas configuradas.",
+    )
+    days_to_expire = fields.Integer(
+        string="Dias até Vencer",
+        compute="_compute_expiration_status",
+    )
+    expiration_status = fields.Selection(
+        EXPIRATION_STATUS,
+        string="Status Vencimento",
+        compute="_compute_expiration_status",
+        search="_search_expiration_status",
+    )
+    last_expiration_alert = fields.Date(
+        string="Último Alerta Vencimento",
+        copy=False,
+        help="Data do último alerta disparado pelo cron — anti-duplicação.",
     )
 
     approval_state = fields.Selection(
@@ -103,6 +134,14 @@ class DmsFile(models.Model):
                     rec.confidentiality = rec.document_type_id.default_confidentiality
                 if rec.document_type_id.default_directory_id and not rec.directory_id:
                     rec.directory_id = rec.document_type_id.default_directory_id
+                if (
+                    not rec.expiration_date
+                    and rec.document_type_id.retention_days
+                    and rec.document_type_id.retention_days > 0
+                ):
+                    rec.expiration_date = fields.Date.today() + timedelta(
+                        days=rec.document_type_id.retention_days
+                    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -321,3 +360,173 @@ class DmsFile(models.Model):
             )
             rec.sudo()._approval_clear_activities()
         return True
+
+    # ------------------------------------------------------------------
+    # Vencimento — computed + cron
+    # ------------------------------------------------------------------
+    _EXPIRATION_ACTIVITY_XMLID = "afr_ecm.mail_activity_data_expiration"
+    _EXPIRATION_PARAM_KEY = "afr_ecm.expiration_alert_days"
+
+    @api.depends("expiration_date")
+    def _compute_expiration_status(self):
+        today = fields.Date.today()
+        for rec in self:
+            if not rec.expiration_date:
+                rec.days_to_expire = 0
+                rec.expiration_status = "none"
+                continue
+            delta = (rec.expiration_date - today).days
+            rec.days_to_expire = delta
+            if delta < 0:
+                rec.expiration_status = "expired"
+            elif delta <= 7:
+                rec.expiration_status = "critical"
+            elif delta <= 30:
+                rec.expiration_status = "warning"
+            else:
+                rec.expiration_status = "ok"
+
+    def _search_expiration_status(self, operator, value):
+        today = fields.Date.today()
+        domains = {
+            "none": [("expiration_date", "=", False)],
+            "expired": [("expiration_date", "<", today)],
+            "critical": [
+                ("expiration_date", ">=", today),
+                ("expiration_date", "<=", today + timedelta(days=7)),
+            ],
+            "warning": [
+                ("expiration_date", ">", today + timedelta(days=7)),
+                ("expiration_date", "<=", today + timedelta(days=30)),
+            ],
+            "ok": [("expiration_date", ">", today + timedelta(days=30))],
+        }
+        if operator not in ("=", "!=", "in", "not in"):
+            return [("id", "=", 0)]
+        wanted = value if isinstance(value, (list, tuple)) else [value]
+        if operator in ("!=", "not in"):
+            wanted = [k for k in domains.keys() if k not in wanted]
+        if not wanted:
+            return [("id", "=", 0)]
+        result = []
+        for i, key in enumerate(wanted):
+            if key not in domains:
+                continue
+            sub = domains[key]
+            if i == 0:
+                result = sub
+            else:
+                result = ["|"] + result + sub
+        return result or [("id", "=", 0)]
+
+    @api.model
+    def _get_expiration_alert_days(self):
+        raw = self.env["ir.config_parameter"].sudo().get_param(
+            self._EXPIRATION_PARAM_KEY, "30,7,0"
+        )
+        out = []
+        for part in (raw or "").split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                out.append(int(part))
+            except ValueError:
+                _logger.warning(
+                    "afr_ecm: valor inválido em %s: %r",
+                    self._EXPIRATION_PARAM_KEY, part,
+                )
+        return sorted(set(out), reverse=True)
+
+    def _expiration_recipients_followers(self):
+        self.ensure_one()
+        return self.message_partner_ids
+
+    def _expiration_recipients_managers(self):
+        group = self.env.ref("afr_ecm.group_ecm_manager", raise_if_not_found=False)
+        if not group:
+            return self.env["res.users"]
+        return group.users.filtered("active")
+
+    def _send_expiration_alert(self, days_left):
+        """Posta no chatter (email aos followers via mail.thread) +
+        cria activity para gestores ECM."""
+        self.ensure_one()
+        if days_left < 0:
+            subject = _("Documento vencido: %s") % (self.name or "")
+            body = _(
+                "<p>O documento <b>%s</b> está <b>vencido</b> há %d dia(s).</p>"
+                "<p>Vencimento: %s</p>"
+            ) % (self.name or "", -days_left, self.expiration_date)
+        elif days_left == 0:
+            subject = _("Documento vence hoje: %s") % (self.name or "")
+            body = _(
+                "<p>O documento <b>%s</b> <b>vence hoje</b>.</p>"
+            ) % (self.name or "")
+        else:
+            subject = _(
+                "Documento vence em %d dia(s): %s"
+            ) % (days_left, self.name or "")
+            body = _(
+                "<p>O documento <b>%s</b> vence em <b>%d dia(s)</b>.</p>"
+                "<p>Vencimento: %s</p>"
+            ) % (self.name or "", days_left, self.expiration_date)
+
+        self.message_post(
+            subject=subject,
+            body=body,
+            message_type="notification",
+            subtype_xmlid="mail.mt_comment",
+            partner_ids=self._expiration_recipients_followers().ids,
+        )
+
+        act_type = self.env.ref(
+            self._EXPIRATION_ACTIVITY_XMLID, raise_if_not_found=False
+        )
+        if act_type:
+            for user in self._expiration_recipients_managers():
+                self.activity_schedule(
+                    self._EXPIRATION_ACTIVITY_XMLID,
+                    user_id=user.id,
+                    summary=subject,
+                    note=body,
+                )
+
+    @api.model
+    def _cron_check_expirations(self, today=None):
+        """Cron diário: alerta nas janelas configuradas em
+        ir.config_parameter `afr_ecm.expiration_alert_days` (CSV).
+        Campo `last_expiration_alert` evita duplicação no mesmo dia.
+        """
+        today = today or fields.Date.today()
+        windows = self._get_expiration_alert_days()
+        if not windows:
+            return 0
+        max_window = max(max(windows), 0)
+        domain = [
+            ("expiration_date", "!=", False),
+            ("expiration_date", "<=", today + timedelta(days=max_window)),
+            "|",
+            ("last_expiration_alert", "=", False),
+            ("last_expiration_alert", "<", today),
+        ]
+        domain += [
+            "|", ("approval_state", "=", False),
+            ("approval_state", "!=", "rejected"),
+        ]
+        files = self.sudo().search(domain)
+        sent = 0
+        for f in files:
+            delta = (f.expiration_date - today).days
+            if delta >= 0 and delta not in windows:
+                continue
+            try:
+                f._send_expiration_alert(delta)
+                f.last_expiration_alert = today
+                sent += 1
+            except Exception as e:
+                _logger.exception(
+                    "afr_ecm: falha ao alertar vencimento de dms.file id=%s: %s",
+                    f.id, e,
+                )
+        return sent

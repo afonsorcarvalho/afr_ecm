@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import logging
 from datetime import date, timedelta
 
@@ -5,6 +7,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 from .document_type import CONFIDENTIALITY
+from ..services import ocr_engine
 
 
 _logger = logging.getLogger(__name__)
@@ -25,6 +28,14 @@ EXPIRATION_STATUS = [
     ("expired", "Vencido"),
 ]
 
+OCR_STATE = [
+    ("pending", "Pendente"),
+    ("processing", "Processando"),
+    ("done", "Concluído"),
+    ("failed", "Falhou"),
+    ("skipped", "Pulado"),
+]
+
 # Campos cuja escrita NÃO é considerada alteração de conteúdo
 # (logging, chatter, activities, audit, próprio workflow, expiração).
 _APPROVAL_META_FIELDS = frozenset(
@@ -33,6 +44,14 @@ _APPROVAL_META_FIELDS = frozenset(
         "current_level_id",
         "approval_action_ids",
         "last_expiration_alert",
+        "ocr_state",
+        "ocr_text",
+        "ocr_processed_at",
+        "ocr_engine",
+        "ocr_pages",
+        "ocr_confidence",
+        "ocr_error",
+        "ocr_content_hash",
         "message_ids",
         "message_follower_ids",
         "message_partner_ids",
@@ -104,6 +123,24 @@ class DmsFile(models.Model):
         help="Data do último alerta disparado pelo cron — anti-duplicação.",
     )
 
+    # ----- OCR -----
+    ocr_state = fields.Selection(
+        OCR_STATE,
+        string="Status OCR",
+        index=True,
+        copy=False,
+        tracking=True,
+    )
+    ocr_text = fields.Text(string="Texto extraído (OCR)", copy=False)
+    ocr_processed_at = fields.Datetime(string="OCR processado em", copy=False)
+    ocr_engine = fields.Char(string="OCR engine", copy=False)
+    ocr_pages = fields.Integer(string="OCR páginas", copy=False)
+    ocr_confidence = fields.Float(string="OCR confiança", copy=False)
+    ocr_error = fields.Text(string="OCR erro", copy=False)
+    ocr_content_hash = fields.Char(
+        string="OCR hash conteúdo", index=True, copy=False, size=64,
+    )
+
     approval_state = fields.Selection(
         APPROVAL_STATE,
         string="Status Aprovação",
@@ -153,6 +190,8 @@ class DmsFile(models.Model):
                 and not rec.approval_state
             ):
                 rec.approval_state = "draft"
+        # OCR: dispara para os elegíveis
+        records._ocr_dispatch()
         return records
 
     def write(self, vals):
@@ -171,7 +210,12 @@ class DmsFile(models.Model):
                         )
                         % ", ".join(sorted(forbidden))
                     )
-        return super().write(vals)
+        res = super().write(vals)
+        # OCR: re-dispatch se o conteúdo (ou tipo) mudou
+        ocr_trigger_fields = {"content", "content_binary", "content_file", "document_type_id"}
+        if ocr_trigger_fields & set(vals.keys()):
+            self._ocr_dispatch()
+        return res
 
     def _audit_log_view(self):
         Log = self.env["afr.ecm.audit.log"].sudo()
@@ -529,4 +573,209 @@ class DmsFile(models.Model):
                     "afr_ecm: falha ao alertar vencimento de dms.file id=%s: %s",
                     f.id, e,
                 )
+        return sent
+
+    # ------------------------------------------------------------------
+    # OCR — opt-in via document_type.ocr_enabled
+    # ------------------------------------------------------------------
+    _OCR_ENABLED_KEY = "afr_ecm.ocr.enabled"
+    _OCR_LANG_KEY = "afr_ecm.ocr.languages"
+    _OCR_MAX_PAGES_KEY = "afr_ecm.ocr.max_pages"
+    _OCR_MIN_CHARS_KEY = "afr_ecm.ocr.min_chars_skip"
+    _OCR_DPI_KEY = "afr_ecm.ocr.dpi"
+
+    @api.model
+    def _ocr_global_enabled(self):
+        v = self.env["ir.config_parameter"].sudo().get_param(
+            self._OCR_ENABLED_KEY, "True"
+        )
+        return str(v).strip().lower() in ("1", "true", "yes", "on")
+
+    @api.model
+    def _ocr_get_config(self):
+        ICP = self.env["ir.config_parameter"].sudo()
+        return {
+            "languages": ICP.get_param(self._OCR_LANG_KEY, "por+eng"),
+            "max_pages": int(ICP.get_param(self._OCR_MAX_PAGES_KEY, "50")),
+            "min_chars_skip": int(ICP.get_param(self._OCR_MIN_CHARS_KEY, "100")),
+            "dpi": int(ICP.get_param(self._OCR_DPI_KEY, "200")),
+        }
+
+    def _ocr_get_mimetype(self):
+        self.ensure_one()
+        # tenta atributo direto (algumas versões dms.file têm)
+        mt = getattr(self, "mimetype", None)
+        if mt:
+            return mt
+        if self.attachment_id and getattr(self.attachment_id, "mimetype", None):
+            return self.attachment_id.mimetype
+        # fallback por extensão
+        name = (self.name or "").lower()
+        ext_map = {
+            ".pdf": "application/pdf",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".tif": "image/tiff",
+            ".tiff": "image/tiff",
+            ".bmp": "image/bmp",
+            ".gif": "image/gif",
+        }
+        for ext, mt in ext_map.items():
+            if name.endswith(ext):
+                return mt
+        return ""
+
+    def _ocr_get_content_bytes(self):
+        self.ensure_one()
+        c = self.content
+        if not c:
+            return b""
+        try:
+            return base64.b64decode(c)
+        except Exception:
+            return b""
+
+    @staticmethod
+    def _ocr_compute_hash(content_bytes):
+        if not content_bytes:
+            return ""
+        return hashlib.sha256(content_bytes).hexdigest()
+
+    def _ocr_is_eligible(self):
+        """True se o file deve ser processado por OCR."""
+        self.ensure_one()
+        if not self._ocr_global_enabled():
+            return False
+        if not self.document_type_id or not self.document_type_id.ocr_enabled:
+            return False
+        mt = self._ocr_get_mimetype()
+        if not ocr_engine.is_supported_mimetype(mt):
+            return False
+        return True
+
+    def _ocr_dispatch(self, force=False):
+        """Marca state=pending e enfileira job (queue_job).
+        Se `force`, redispara mesmo que hash não tenha mudado.
+        """
+        for rec in self:
+            if not rec._ocr_is_eligible():
+                continue
+            content = rec._ocr_get_content_bytes()
+            if not content:
+                continue
+            h = self._ocr_compute_hash(content)
+            if not force and h and h == rec.ocr_content_hash and rec.ocr_state == "done":
+                # cache hit: já processamos esse conteúdo
+                continue
+            rec.sudo().write({
+                "ocr_state": "pending",
+                "ocr_error": False,
+            })
+            # enfileira job; with_delay vem do queue_job
+            try:
+                rec.with_delay(
+                    description="OCR dms.file id=%s" % rec.id,
+                    channel="root.afr_ecm.ocr",
+                )._ocr_process()
+            except AttributeError:
+                # fallback (sem queue_job): processa sync
+                _logger.warning(
+                    "afr_ecm: queue_job indisponível, processando OCR sync para id=%s",
+                    rec.id,
+                )
+                rec._ocr_process()
+
+    def _ocr_process(self):
+        """Job OCR. Decorado @job pelo queue_job (via with_delay no dispatch).
+        Roda single-record. Atualiza fields + popula
+        ir.attachment.index_content para search.
+        """
+        self.ensure_one()
+        rec = self.sudo()
+        rec.write({"ocr_state": "processing"})
+        cfg = rec._ocr_get_config()
+        content = rec._ocr_get_content_bytes()
+        mt = rec._ocr_get_mimetype()
+        try:
+            result = ocr_engine.extract(
+                content,
+                mt,
+                languages=cfg["languages"],
+                dpi=cfg["dpi"],
+                max_pages=cfg["max_pages"],
+                min_chars_skip_ocr=cfg["min_chars_skip"],
+            )
+        except Exception as e:
+            _logger.exception("OCR job falhou para id=%s: %s", rec.id, e)
+            rec.write({
+                "ocr_state": "failed",
+                "ocr_error": str(e),
+                "ocr_processed_at": fields.Datetime.now(),
+            })
+            return False
+
+        if result.skipped:
+            rec.write({
+                "ocr_state": "skipped",
+                "ocr_engine": result.engine,
+                "ocr_error": result.skipped_reason or False,
+                "ocr_processed_at": fields.Datetime.now(),
+            })
+            return False
+        if result.error:
+            rec.write({
+                "ocr_state": "failed",
+                "ocr_error": result.error,
+                "ocr_engine": result.engine,
+                "ocr_processed_at": fields.Datetime.now(),
+            })
+            return False
+
+        rec.write({
+            "ocr_state": "done",
+            "ocr_text": result.text,
+            "ocr_engine": result.engine,
+            "ocr_pages": result.pages,
+            "ocr_confidence": result.confidence,
+            "ocr_content_hash": rec._ocr_compute_hash(content),
+            "ocr_processed_at": fields.Datetime.now(),
+            "ocr_error": False,
+        })
+        # popula índice para full-text search (cobre /web/search padrão Odoo)
+        if rec.attachment_id and result.text:
+            try:
+                rec.attachment_id.sudo().write({"index_content": result.text})
+            except Exception:
+                _logger.exception("Falha ao gravar index_content em attachment_id=%s",
+                                  rec.attachment_id.id)
+        return True
+
+    def action_reprocess_ocr(self):
+        """Botão: força reprocesso (ignora cache de hash)."""
+        for rec in self:
+            if not rec._ocr_is_eligible():
+                raise UserError(_(
+                    "Tipo do documento não tem OCR habilitado, "
+                    "ou mimetype não suportado, ou OCR global desativado."
+                ))
+            rec._ocr_dispatch(force=True)
+        return True
+
+    @api.model
+    def _cron_ocr_backlog(self):
+        """Cron de fallback: pega state in (pending, failed) e re-dispatch.
+        Útil quando worker estava down ou job foi perdido.
+        """
+        domain = [
+            ("ocr_state", "in", ["pending", "failed"]),
+        ]
+        candidates = self.sudo().search(domain, limit=200)
+        sent = 0
+        for rec in candidates:
+            try:
+                rec._ocr_dispatch(force=False)
+                sent += 1
+            except Exception as e:
+                _logger.exception("OCR backlog dispatch falha id=%s: %s", rec.id, e)
         return sent

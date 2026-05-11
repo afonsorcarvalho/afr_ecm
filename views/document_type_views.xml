@@ -37,6 +37,7 @@
                             <field name="retention_days"/>
                             <field name="color" widget="color_picker"/>
                             <field name="requires_approval"/>
+                            <field name="ocr_enabled"/>
                         </group>
                     </group>
                     <notebook>

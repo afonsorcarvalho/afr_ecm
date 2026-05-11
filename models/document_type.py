@@ -46,6 +46,11 @@ class AfrEcmDocumentType(models.Model):
         default=False,
         help="Quando marcado, novos arquivos deste tipo entram em estado 'Rascunho' e seguem a cadeia de níveis de aprovação configurada.",
     )
+    ocr_enabled = fields.Boolean(
+        string="OCR habilitado",
+        default=False,
+        help="Quando marcado, arquivos deste tipo (PDF/imagem) terão texto extraído via OCR e indexado para busca.",
+    )
     approval_level_ids = fields.One2many(
         "afr.ecm.approval.level",
         "document_type_id",

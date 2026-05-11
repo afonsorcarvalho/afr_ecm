@@ -1,6 +1,6 @@
 {
     'name': 'AFR ECM — Enterprise Content Management',
-    'version': '16.0.1.2.0',
+    'version': '16.0.1.3.0',
     'category': 'Document Management',
     'summary': 'ECM sobre OCA dms: tipos de documento, metadados, confidencialidade, audit log e acervo físico com QR',
     'author': 'Engenapp',
@@ -12,6 +12,7 @@
         'dms',
         'dms_user_role',
         'hr_dms_field',
+        'queue_job',
     ],
     'data': [
         'security/security.xml',
@@ -30,7 +31,8 @@
         'views/menus.xml',
     ],
     'external_dependencies': {
-        'python': ['qrcode'],
+        'python': ['qrcode', 'pytesseract', 'pdf2image', 'PIL'],
+        'bin': ['tesseract', 'pdftotext'],
     },
     'installable': True,
     'application': True,

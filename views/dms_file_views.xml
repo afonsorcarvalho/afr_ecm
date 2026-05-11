@@ -19,6 +19,10 @@
                     <button name="action_reopen" type="object"
                             string="Reabrir"
                             attrs="{'invisible': [('approval_state','not in',['rejected','approved'])]}"/>
+                    <button name="action_reprocess_ocr" type="object"
+                            string="Reprocessar OCR"
+                            attrs="{'invisible': [('ocr_state','=',False)]}"
+                            groups="afr_ecm.group_ecm_manager"/>
                     <field name="approval_state" widget="statusbar"
                            statusbar_visible="draft,pending,approved"
                            attrs="{'invisible': [('approval_state','=',False)]}"/>
@@ -35,6 +39,21 @@
                         <group>
                             <field name="physical_location_id"/>
                         </group>
+                    </group>
+                    <group string="OCR"
+                           attrs="{'invisible': [('ocr_state','=',False)]}">
+                        <group>
+                            <field name="ocr_state"/>
+                            <field name="ocr_engine"/>
+                            <field name="ocr_pages"/>
+                            <field name="ocr_confidence"/>
+                            <field name="ocr_processed_at"/>
+                        </group>
+                        <group>
+                            <field name="ocr_error" attrs="{'invisible': [('ocr_state','!=','failed')]}"/>
+                        </group>
+                        <field name="ocr_text" nolabel="1" colspan="2" readonly="1"
+                               attrs="{'invisible': [('ocr_state','!=','done')]}"/>
                     </group>
                     <group string="Aprovação"
                            attrs="{'invisible': [('approval_state','=',False)]}">
@@ -87,6 +106,10 @@
                        decoration-danger="expiration_status == 'expired'"
                        decoration-warning="expiration_status == 'critical'"
                        decoration-info="expiration_status == 'warning'"/>
+                <field name="ocr_state" optional="hide"
+                       decoration-success="ocr_state == 'done'"
+                       decoration-warning="ocr_state == 'pending'"
+                       decoration-danger="ocr_state == 'failed'"/>
             </field>
         </field>
     </record>
@@ -107,6 +130,10 @@
                 <filter name="ecm_expired" string="Vencidos" domain="[('expiration_status','=','expired')]"/>
                 <filter name="ecm_critical" string="Vence ≤ 7 dias" domain="[('expiration_status','=','critical')]"/>
                 <filter name="ecm_warning" string="Vence ≤ 30 dias" domain="[('expiration_status','=','warning')]"/>
+                <separator/>
+                <filter name="ocr_pending" string="OCR Pendente" domain="[('ocr_state','=','pending')]"/>
+                <filter name="ocr_failed" string="OCR Falhou" domain="[('ocr_state','=','failed')]"/>
+                <filter name="ocr_done" string="OCR Concluído" domain="[('ocr_state','=','done')]"/>
                 <group expand="0" string="Agrupar Por">
                     <filter name="g_doc_type" string="Tipo" context="{'group_by':'document_type_id'}"/>
                     <filter name="g_conf" string="Confidencialidade" context="{'group_by':'confidentiality'}"/>

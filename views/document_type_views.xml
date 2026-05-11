@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_doc_type_tree" model="ir.ui.view">
+        <field name="name">afr.ecm.document.type.tree</field>
+        <field name="model">afr.ecm.document.type</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="default_confidentiality"/>
+                <field name="default_directory_id"/>
+                <field name="retention_days"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_doc_type_form" model="ir.ui.view">
+        <field name="name">afr.ecm.document.type.form</field>
+        <field name="model">afr.ecm.document.type</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <widget name="web_ribbon" title="Arquivado" bg_color="bg-danger" attrs="{'invisible': [('active','=',True)]}"/>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="default_confidentiality"/>
+                            <field name="default_directory_id"/>
+                            <field name="retention_days"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Descrição" name="description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Metadados" name="metadata">
+                            <field name="metadata_field_ids">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="label"/>
+                                    <field name="field_type"/>
+                                    <field name="required"/>
+                                    <field name="selection_values" attrs="{'invisible': [('field_type','!=','selection')]}"/>
+                                    <field name="help_text"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_doc_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Documento</field>
+        <field name="res_model">afr.ecm.document.type</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

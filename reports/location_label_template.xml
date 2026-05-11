@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_location_label_doc">
+        <t t-call="web.basic_layout">
+            <div class="page" style="page-break-inside: avoid;">
+                <t t-foreach="docs" t-as="loc">
+                    <div style="border: 1px solid #333; padding: 10mm; width: 90mm; height: 60mm; display: inline-block; vertical-align: top; margin: 2mm;">
+                        <div style="text-align: center;">
+                            <img t-if="loc.qr_image" t-att-src="'data:image/png;base64,%s' % loc.qr_image.decode() if loc.qr_image else ''" style="height: 30mm; width: 30mm;"/>
+                        </div>
+                        <div style="text-align: center; margin-top: 2mm;">
+                            <strong style="font-size: 14pt;"><t t-esc="loc.name"/></strong>
+                        </div>
+                        <div style="text-align: center; font-size: 8pt; color: #555;">
+                            <t t-esc="loc.complete_path"/>
+                        </div>
+                        <div style="text-align: center; font-size: 8pt; margin-top: 1mm;">
+                            <t t-esc="loc.barcode or loc.code or ''"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_location_label">
+        <t t-call="web.html_container">
+            <t t-call="afr_ecm.report_location_label_doc"/>
+        </t>
+    </template>
+</odoo>

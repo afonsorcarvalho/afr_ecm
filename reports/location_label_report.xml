@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_location_label" model="ir.actions.report">
+        <field name="name">Etiqueta QR — Localização</field>
+        <field name="model">afr.ecm.physical.location</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">afr_ecm.report_location_label</field>
+        <field name="report_file">afr_ecm.report_location_label</field>
+        <field name="binding_model_id" ref="model_afr_ecm_physical_location"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

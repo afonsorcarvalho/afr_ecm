@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="dms_access_group_ecm_default" model="dms.access.group">
+            <field name="name">ECM Padrão</field>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="group_ids" eval="[(4, ref('group_ecm_manager'))]"/>
+        </record>
+
+        <record id="seq_physical_location" model="ir.sequence">
+            <field name="name">ECM Localização Física</field>
+            <field name="code">afr.ecm.physical.location</field>
+            <field name="prefix">ECM-LOC-</field>
+            <field name="padding">6</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">no_gap</field>
+        </record>
+
+        <record id="doc_type_contract" model="afr.ecm.document.type">
+            <field name="name">Contrato</field>
+            <field name="code">contract</field>
+            <field name="default_confidentiality">restricted</field>
+            <field name="retention_days">3650</field>
+            <field name="sequence">10</field>
+        </record>
+        <record id="doc_type_invoice" model="afr.ecm.document.type">
+            <field name="name">Fatura/Nota Fiscal</field>
+            <field name="code">invoice</field>
+            <field name="default_confidentiality">internal</field>
+            <field name="retention_days">1825</field>
+            <field name="sequence">20</field>
+        </record>
+        <record id="doc_type_hr_admission" model="afr.ecm.document.type">
+            <field name="name">RH — Admissão</field>
+            <field name="code">hr_admission</field>
+            <field name="default_confidentiality">restricted</field>
+            <field name="retention_days">7300</field>
+            <field name="sequence">30</field>
+        </record>
+        <record id="doc_type_hr_aso" model="afr.ecm.document.type">
+            <field name="name">RH — ASO</field>
+            <field name="code">hr_aso</field>
+            <field name="default_confidentiality">restricted</field>
+            <field name="retention_days">7300</field>
+            <field name="sequence">40</field>
+        </record>
+        <record id="doc_type_minutes" model="afr.ecm.document.type">
+            <field name="name">Ata de Reunião</field>
+            <field name="code">minutes</field>
+            <field name="default_confidentiality">internal</field>
+            <field name="retention_days">1825</field>
+            <field name="sequence">50</field>
+        </record>
+        <record id="doc_type_certificate" model="afr.ecm.document.type">
+            <field name="name">Certificado/Calibração</field>
+            <field name="code">certificate</field>
+            <field name="default_confidentiality">internal</field>
+            <field name="retention_days">1825</field>
+            <field name="sequence">60</field>
+        </record>
+    </data>
+</odoo>

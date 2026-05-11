@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_dms_file_form_ecm" model="ir.ui.view">
+        <field name="name">dms.file.form.ecm</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.view_dms_file_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Classificação ECM" name="ecm_classification">
+                    <group>
+                        <group>
+                            <field name="document_type_id"/>
+                            <field name="confidentiality"/>
+                            <field name="expiration_date"/>
+                        </group>
+                        <group>
+                            <field name="physical_location_id"/>
+                        </group>
+                    </group>
+                    <group string="Metadados">
+                        <field name="metadata_value_ids" nolabel="1">
+                            <tree editable="bottom">
+                                <field name="field_id" domain="[('document_type_id','=', parent.document_type_id)]"/>
+                                <field name="field_type" invisible="1"/>
+                                <field name="label"/>
+                                <field name="value_char" attrs="{'invisible': [('field_type','!=','char')]}"/>
+                                <field name="value_text" attrs="{'invisible': [('field_type','!=','text')]}"/>
+                                <field name="value_integer" attrs="{'invisible': [('field_type','!=','integer')]}"/>
+                                <field name="value_float" attrs="{'invisible': [('field_type','!=','float')]}"/>
+                                <field name="value_date" attrs="{'invisible': [('field_type','!=','date')]}"/>
+                                <field name="value_datetime" attrs="{'invisible': [('field_type','!=','datetime')]}"/>
+                                <field name="value_boolean" attrs="{'invisible': [('field_type','!=','boolean')]}"/>
+                                <field name="value_selection" attrs="{'invisible': [('field_type','!=','selection')]}"/>
+                            </tree>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_dms_file_tree_ecm" model="ir.ui.view">
+        <field name="name">dms.file.tree.ecm</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.view_dms_file_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="document_type_id" optional="show"/>
+                <field name="confidentiality" optional="show"/>
+                <field name="physical_location_id" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_dms_file_search_ecm" model="ir.ui.view">
+        <field name="name">dms.file.search.ecm</field>
+        <field name="model">dms.file</field>
+        <field name="inherit_id" ref="dms.search_dms_file"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="document_type_id"/>
+                <field name="physical_location_id"/>
+                <filter name="ecm_public" string="Público" domain="[('confidentiality','=','public')]"/>
+                <filter name="ecm_internal" string="Interno" domain="[('confidentiality','=','internal')]"/>
+                <filter name="ecm_restricted" string="Restrito" domain="[('confidentiality','=','restricted')]"/>
+                <filter name="ecm_confidential" string="Confidencial" domain="[('confidentiality','=','confidential')]"/>
+                <separator/>
+                <filter name="ecm_expired" string="Vencidos" domain="[('expiration_date','&lt;', context_today())]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter name="g_doc_type" string="Tipo" context="{'group_by':'document_type_id'}"/>
+                    <filter name="g_conf" string="Confidencialidade" context="{'group_by':'confidentiality'}"/>
+                    <filter name="g_loc" string="Localização Física" context="{'group_by':'physical_location_id'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

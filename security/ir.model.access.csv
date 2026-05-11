@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_doc_type_user,doc_type_user,model_afr_ecm_document_type,group_ecm_user,1,0,0,0
+access_doc_type_manager,doc_type_manager,model_afr_ecm_document_type,group_ecm_manager,1,1,1,0
+access_doc_type_admin,doc_type_admin,model_afr_ecm_document_type,group_ecm_admin,1,1,1,1
+access_meta_field_user,meta_field_user,model_afr_ecm_metadata_field,group_ecm_user,1,0,0,0
+access_meta_field_manager,meta_field_manager,model_afr_ecm_metadata_field,group_ecm_manager,1,1,1,0
+access_meta_field_admin,meta_field_admin,model_afr_ecm_metadata_field,group_ecm_admin,1,1,1,1
+access_meta_value_user,meta_value_user,model_afr_ecm_metadata_value,group_ecm_user,1,1,1,1
+access_phys_loc_user,phys_loc_user,model_afr_ecm_physical_location,group_ecm_user,1,0,0,0
+access_phys_loc_manager,phys_loc_manager,model_afr_ecm_physical_location,group_ecm_manager,1,1,1,0
+access_phys_loc_admin,phys_loc_admin,model_afr_ecm_physical_location,group_ecm_admin,1,1,1,1
+access_audit_log_user,audit_log_user,model_afr_ecm_audit_log,group_ecm_user,1,0,0,0
+access_audit_log_manager,audit_log_manager,model_afr_ecm_audit_log,group_ecm_manager,1,0,0,0
+access_audit_log_admin,audit_log_admin,model_afr_ecm_audit_log,group_ecm_admin,1,1,1,1

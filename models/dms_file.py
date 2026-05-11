@@ -141,6 +141,13 @@ class DmsFile(models.Model):
         string="OCR hash conteúdo", index=True, copy=False, size=64,
     )
 
+    can_download = fields.Boolean(
+        string="Pode Baixar",
+        compute="_compute_can_download",
+        help="True se o usuário atual está autorizado a baixar este arquivo "
+             "(considera document_type_id.download_group_ids).",
+    )
+
     approval_state = fields.Selection(
         APPROVAL_STATE,
         string="Status Aprovação",
@@ -246,6 +253,39 @@ class DmsFile(models.Model):
         Log = self.env["afr.ecm.audit.log"].sudo()
         for rec in self:
             Log.log("view", rec)
+
+    # ------------------------------------------------------------------
+    # Restrição de download por tipo de documento
+    # ------------------------------------------------------------------
+    def _user_can_download(self, user=None):
+        """True se `user` (default: env.user) pode baixar este arquivo.
+
+        Regras:
+          - admin/manager ECM sempre podem
+          - sem document_type_id → permitido
+          - document_type sem download_group_ids → permitido
+          - user em qualquer grupo de download_group_ids → permitido
+        """
+        self.ensure_one()
+        user = user or self.env.user
+        if user._is_superuser():
+            return True
+        if user.has_group("afr_ecm.group_ecm_admin") or user.has_group(
+            "afr_ecm.group_ecm_manager"
+        ):
+            return True
+        dt = self.document_type_id
+        if not dt or not dt.download_group_ids:
+            return True
+        return bool(dt.download_group_ids & user.groups_id)
+
+    def _compute_can_download(self):
+        user = self.env.user
+        for rec in self:
+            try:
+                rec.can_download = rec._user_can_download(user)
+            except Exception:
+                rec.can_download = False
 
     # ------------------------------------------------------------------
     # Workflow de aprovação

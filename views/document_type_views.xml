@@ -44,6 +44,20 @@
                         <page string="Descrição" name="description">
                             <field name="description"/>
                         </page>
+                        <page string="Restrição de Download" name="download_restriction">
+                            <group>
+                                <p class="text-muted" colspan="2">
+                                    Se nenhum grupo for selecionado, qualquer usuário com leitura
+                                    pode baixar arquivos deste tipo. Se um ou mais grupos forem
+                                    selecionados, apenas usuários nestes grupos (mais
+                                    administradores/gestores ECM) poderão baixar. A visualização
+                                    inline (preview) não é afetada. Links públicos
+                                    (<code>/ecm/share/...</code>) são automaticamente bloqueados
+                                    quando esta restrição está ativa.
+                                </p>
+                                <field name="download_group_ids" widget="many2many_tags" colspan="2" nolabel="1"/>
+                            </group>
+                        </page>
                         <page string="Metadados" name="metadata">
                             <field name="metadata_field_ids">
                                 <tree editable="bottom">

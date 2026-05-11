@@ -57,6 +57,19 @@ class AfrEcmDocumentType(models.Model):
         string="Níveis de Aprovação",
     )
 
+    download_group_ids = fields.Many2many(
+        "res.groups",
+        "afr_ecm_doctype_download_group_rel",
+        "doctype_id",
+        "group_id",
+        string="Grupos com Permissão de Download",
+        help=(
+            "Se vazio, qualquer usuário com leitura pode baixar. "
+            "Se preenchido, apenas usuários nestes grupos (ou admin/manager ECM) "
+            "poderão baixar arquivos deste tipo. Visualização não é afetada."
+        ),
+    )
+
     _sql_constraints = [
         ("code_uniq", "unique(code)", "O código do tipo de documento deve ser único."),
     ]

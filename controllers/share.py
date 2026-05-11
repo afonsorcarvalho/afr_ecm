@@ -28,6 +28,16 @@ class EcmShare(http.Controller):
             return request.not_found()
         if not tools.consteq(dms.access_token, token):
             return request.not_found()
+        # Restrição de download por tipo: tipos com download_group_ids
+        # NUNCA são acessíveis via link público (que é anônimo).
+        dt = dms.document_type_id
+        if dt and dt.download_group_ids:
+            _logger.info(
+                "ECM share: bloqueado link público p/ dms.file id=%s "
+                "(document_type %s tem download restrito)",
+                dms.id, dt.code or dt.name,
+            )
+            return request.not_found()
         # audit
         try:
             request.env["afr.ecm.audit.log"].sudo().log("download", dms)

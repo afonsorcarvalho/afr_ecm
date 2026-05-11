@@ -117,8 +117,9 @@ class DmsFile(models.Model):
         return records
 
     def write(self, vals):
-        # Bloqueia edição de conteúdo em arquivos approved (exceto admin).
-        if self and not self.env.user.has_group("afr_ecm.group_ecm_admin"):
+        # Bloqueia edição de conteúdo em arquivos approved.
+        # Bypass apenas via sudo() (workflow interno) ou superuser.
+        if self and not self.env.su:
             forbidden = set(vals) - _APPROVAL_META_FIELDS
             if forbidden:
                 approved = self.filtered(lambda r: r.approval_state == "approved")
@@ -126,7 +127,7 @@ class DmsFile(models.Model):
                     raise UserError(
                         _(
                             "Arquivo aprovado é imutável. "
-                            "Reabra o documento (volta a rascunho) antes de editar. "
+                            "Clique em 'Reabrir' para voltar ao rascunho antes de editar. "
                             "Campos bloqueados: %s"
                         )
                         % ", ".join(sorted(forbidden))

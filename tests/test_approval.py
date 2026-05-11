@@ -249,9 +249,18 @@ class TestApprovalWorkflow(TransactionCase):
         with self.assertRaises(UserError):
             f.with_user(self.manager).write({"name": "novo nome"})
 
-        # admin pode
-        f.with_user(self.admin).write({"name": "novo nome admin"})
-        self.assertEqual(f.name, "novo nome admin")
+        # admin TAMBÉM bloqueado (precisa reabrir antes)
+        with self.assertRaises(UserError):
+            f.with_user(self.admin).write({"name": "novo nome admin"})
+
+        # sudo bypassa (workflow interno)
+        f.sudo().write({"name": "novo nome via sudo"})
+        self.assertEqual(f.name, "novo nome via sudo")
+
+        # fluxo correto: reabrir → editar → ressubmeter
+        f.with_user(self.admin).action_reopen()
+        f.with_user(self.admin).write({"name": "renomeado pos reopen"})
+        self.assertEqual(f.name, "renomeado pos reopen")
 
     def test_activity_created_on_submit(self):
         f = self._create_file(self.dt_two_levels)

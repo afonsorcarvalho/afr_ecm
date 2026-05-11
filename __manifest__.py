@@ -1,6 +1,6 @@
 {
     'name': 'AFR ECM — Enterprise Content Management',
-    'version': '16.0.1.0.0',
+    'version': '16.0.1.1.0',
     'category': 'Document Management',
     'summary': 'ECM sobre OCA dms: tipos de documento, metadados, confidencialidade, audit log e acervo físico com QR',
     'author': 'Engenapp',
@@ -18,6 +18,7 @@
         'security/ir.model.access.csv',
         'security/record_rules.xml',
         'data/document_type_data.xml',
+        'data/mail_activity_data.xml',
         'reports/location_label_template.xml',
         'reports/location_label_report.xml',
         'views/document_type_views.xml',

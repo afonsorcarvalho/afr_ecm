@@ -36,6 +36,7 @@
                             <field name="default_directory_id"/>
                             <field name="retention_days"/>
                             <field name="color" widget="color_picker"/>
+                            <field name="requires_approval"/>
                         </group>
                     </group>
                     <notebook>
@@ -52,6 +53,19 @@
                                     <field name="required"/>
                                     <field name="selection_values" attrs="{'invisible': [('field_type','!=','selection')]}"/>
                                     <field name="help_text"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Workflow de Aprovação" name="approval"
+                              attrs="{'invisible': [('requires_approval','=',False)]}">
+                            <field name="approval_level_ids">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="group_id"/>
+                                    <field name="user_id"/>
+                                    <field name="consensus"/>
+                                    <field name="active"/>
                                 </tree>
                             </field>
                         </page>

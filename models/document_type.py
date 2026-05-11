@@ -41,6 +41,17 @@ class AfrEcmDocumentType(models.Model):
     )
     color = fields.Integer(string="Cor")
 
+    requires_approval = fields.Boolean(
+        string="Exige Workflow de Aprovação",
+        default=False,
+        help="Quando marcado, novos arquivos deste tipo entram em estado 'Rascunho' e seguem a cadeia de níveis de aprovação configurada.",
+    )
+    approval_level_ids = fields.One2many(
+        "afr.ecm.approval.level",
+        "document_type_id",
+        string="Níveis de Aprovação",
+    )
+
     _sql_constraints = [
         ("code_uniq", "unique(code)", "O código do tipo de documento deve ser único."),
     ]

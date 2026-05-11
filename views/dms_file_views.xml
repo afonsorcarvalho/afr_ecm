@@ -5,6 +5,25 @@
         <field name="model">dms.file</field>
         <field name="inherit_id" ref="dms.view_dms_file_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="action_submit_for_approval" type="object"
+                            string="Submeter para Aprovação" class="btn-primary"
+                            attrs="{'invisible': [('approval_state','!=','draft')]}"/>
+                    <button name="action_approve" type="object"
+                            string="Aprovar" class="btn-primary"
+                            attrs="{'invisible': [('approval_state','!=','pending')]}"/>
+                    <button name="action_reject" type="object"
+                            string="Rejeitar"
+                            attrs="{'invisible': [('approval_state','!=','pending')]}"/>
+                    <button name="action_reopen" type="object"
+                            string="Reabrir"
+                            attrs="{'invisible': [('approval_state','not in',['rejected','approved'])]}"/>
+                    <field name="approval_state" widget="statusbar"
+                           statusbar_visible="draft,pending,approved"
+                           attrs="{'invisible': [('approval_state','=',False)]}"/>
+                </header>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Classificação ECM" name="ecm_classification">
                     <group>
@@ -16,6 +35,21 @@
                         <group>
                             <field name="physical_location_id"/>
                         </group>
+                    </group>
+                    <group string="Aprovação"
+                           attrs="{'invisible': [('approval_state','=',False)]}">
+                        <group>
+                            <field name="current_level_id" readonly="1"/>
+                        </group>
+                        <field name="approval_action_ids" nolabel="1" colspan="2" readonly="1">
+                            <tree>
+                                <field name="date"/>
+                                <field name="action"/>
+                                <field name="level_id"/>
+                                <field name="user_id"/>
+                                <field name="note"/>
+                            </tree>
+                        </field>
                     </group>
                     <group string="Metadados">
                         <field name="metadata_value_ids" nolabel="1">

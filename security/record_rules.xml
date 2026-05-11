@@ -39,5 +39,19 @@
             <field name="domain_force">['|', ('create_uid','=',user.id), ('confidentiality','!=','confidential')]</field>
             <field name="groups" eval="[(4, ref('group_ecm_user'))]"/>
         </record>
+
+        <record id="rule_approval_action_user" model="ir.rule">
+            <field name="name">Approval Action: usuário ECM → herda visibilidade do file</field>
+            <field name="model_id" ref="model_afr_ecm_approval_action"/>
+            <field name="domain_force">['|', ('file_id.create_uid','=',user.id), ('file_id.confidentiality','in',['public','internal'])]</field>
+            <field name="groups" eval="[(4, ref('group_ecm_user'))]"/>
+        </record>
+
+        <record id="rule_approval_action_manager" model="ir.rule">
+            <field name="name">Approval Action: gestor ECM vê tudo</field>
+            <field name="model_id" ref="model_afr_ecm_approval_action"/>
+            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="groups" eval="[(4, ref('group_ecm_manager'))]"/>
+        </record>
     </data>
 </odoo>

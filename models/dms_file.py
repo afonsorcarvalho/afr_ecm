@@ -140,6 +140,13 @@ class DmsFile(models.Model):
     ocr_content_hash = fields.Char(
         string="OCR hash conteúdo", index=True, copy=False, size=64,
     )
+    ocr_enabled = fields.Boolean(
+        string="OCR habilitado",
+        default=False,
+        help="Quando marcado, este arquivo é elegível a OCR mesmo que o tipo "
+             "de documento não tenha OCR habilitado. Pode também desabilitar "
+             "OCR num arquivo individual cujo tipo tem OCR ligado.",
+    )
 
     can_download = fields.Boolean(
         string="Pode Baixar",
@@ -211,9 +218,16 @@ class DmsFile(models.Model):
                     rec.expiration_date = fields.Date.today() + timedelta(
                         days=rec.document_type_id.retention_days
                     )
+                rec.ocr_enabled = rec.document_type_id.ocr_enabled
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Herda ocr_enabled do tipo se não informado explicitamente
+        for vals in vals_list:
+            if "ocr_enabled" not in vals and vals.get("document_type_id"):
+                dt = self.env["afr.ecm.document.type"].browse(vals["document_type_id"])
+                if dt and dt.exists():
+                    vals["ocr_enabled"] = bool(dt.ocr_enabled)
         records = super().create(vals_list)
         for rec in records:
             if (
@@ -244,7 +258,7 @@ class DmsFile(models.Model):
                     )
         res = super().write(vals)
         # OCR: re-dispatch se o conteúdo (ou tipo) mudou
-        ocr_trigger_fields = {"content", "content_binary", "content_file", "document_type_id"}
+        ocr_trigger_fields = {"content", "content_binary", "content_file", "document_type_id", "ocr_enabled"}
         if ocr_trigger_fields & set(vals.keys()):
             self._ocr_dispatch()
         return res
@@ -708,11 +722,21 @@ class DmsFile(models.Model):
         return hashlib.sha256(content_bytes).hexdigest()
 
     def _ocr_is_eligible(self):
-        """True se o file deve ser processado por OCR."""
+        """True se o file deve ser processado por OCR.
+
+        Considera o flag opt-in `ocr_enabled` do próprio arquivo (fallback
+        para o `document_type_id.ocr_enabled` se o flag do file não foi
+        explicitamente alterado e o tipo tem OCR ligado).
+        """
         self.ensure_one()
         if not self._ocr_global_enabled():
             return False
-        if not self.document_type_id or not self.document_type_id.ocr_enabled:
+        # ocr_enabled no file tem prioridade. Mantém compatibilidade com o
+        # comportamento antigo: se o tipo tem OCR ligado, mesmo files
+        # com flag default False são elegíveis. Use checkbox UI pra
+        # forçar OFF num arquivo individual.
+        type_enabled = bool(self.document_type_id and self.document_type_id.ocr_enabled)
+        if not (self.ocr_enabled or type_enabled):
             return False
         mt = self._ocr_get_mimetype()
         if not ocr_engine.is_supported_mimetype(mt):

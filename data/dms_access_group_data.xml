@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        dms.access.group default — vincula grupos ECM aos diretórios DMS.
+
+        Permite que QUALQUER usuário com perfil ECM (user/manager/admin)
+        veja e opere nos diretórios DMS, sem precisar ajustes manuais
+        via UI ou SQL após instalação.
+
+        Diretórios novos criados pela UI do ecm_desktop em modo raiz
+        já recebem este grupo automaticamente (frontend popula
+        groupIds com TODOS os dms.access.group disponíveis).
+    -->
+    <record id="dms_access_group_ecm_default" model="dms.access.group">
+        <field name="name">ECM Padrão (AFR)</field>
+        <field name="perm_inclusive_create" eval="True"/>
+        <field name="perm_inclusive_write" eval="True"/>
+        <field name="perm_inclusive_unlink" eval="True"/>
+        <field name="group_ids" eval="[(6, 0, [
+            ref('afr_ecm.group_ecm_user'),
+            ref('afr_ecm.group_ecm_manager'),
+            ref('afr_ecm.group_ecm_admin'),
+        ])]"/>
+    </record>
+</odoo>

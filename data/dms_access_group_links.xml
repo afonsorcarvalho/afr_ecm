@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        Links entre dms.access.group (29-40) e res.groups (group_ecm_area_*).
+        Cada dms.access.group recebe a m2m reference ao grupo res.groups correspondente.
+
+        IDs esperados (criados em data/dms_access_group_data.xml ou via UI):
+        29: ECM_SGQ
+        30: ECM_Operacao
+        31: ECM_Regulatorio
+        32: ECM_Comercial
+        33: ECM_RH
+        34: ECM_RH_Funcionario
+        35: ECM_Financeiro
+        36: ECM_TI
+        37: ECM_Eng
+        38: ECM_SST
+        39: ECM_Diretoria
+        40: Auditor_Externo
+    -->
+    <function model="dms.access.group" name="write">
+        <value eval="29"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_sgq'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="30"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_operacao'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="31"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_regulatorio'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="32"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_comercial'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="33"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_rh'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="34"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_rh_funcionario'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="35"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_financeiro'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="36"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_ti'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="37"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_eng'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="38"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_sst'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="39"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_diretoria'))]}"/>
+    </function>
+
+    <function model="dms.access.group" name="write">
+        <value eval="40"/>
+        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_auditor'))]}"/>
+    </function>
+</odoo>

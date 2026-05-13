@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== TREE ===================== -->
+    <record id="view_afr_ecm_capa_tree" model="ir.ui.view">
+        <field name="name">afr.ecm.capa.tree</field>
+        <field name="model">afr.ecm.capa</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="state == 'closed_effective'"
+                  decoration-danger="state in ('closed_ineffective','reopened')"
+                  decoration-info="state == 'draft'">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="type"/>
+                <field name="nc_id" optional="show"/>
+                <field name="responsible_id"/>
+                <field name="implementation_date" optional="show"/>
+                <field name="verify_30d_due_date" optional="hide"/>
+                <field name="verify_60d_due_date" optional="hide"/>
+                <field name="verify_90d_due_date" optional="hide"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ===================== FORM ===================== -->
+    <record id="view_afr_ecm_capa_form" model="ir.ui.view">
+        <field name="name">afr.ecm.capa.form</field>
+        <field name="model">afr.ecm.capa</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_start_analysis" type="object"
+                            string="Iniciar Análise" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','draft')]}"/>
+                    <button name="action_approve_plan" type="object"
+                            string="Aprovar Plano" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','analysis')]}"/>
+                    <button name="action_mark_implemented" type="object"
+                            string="Marcar Implementado" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','plan')]}"/>
+                    <button name="action_verify_30d" type="object"
+                            string="Verificar 30d" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','verify_30d')]}"/>
+                    <button name="action_verify_60d" type="object"
+                            string="Verificar 60d" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','verify_60d')]}"/>
+                    <button name="action_verify_90d" type="object"
+                            string="Verificar 90d" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','verify_90d')]}"/>
+                    <button name="action_close_effective" type="object"
+                            string="Encerrar — Eficaz"
+                            attrs="{'invisible': [('state','not in',('verify_60d','verify_90d'))]}"/>
+                    <button name="action_close_ineffective" type="object"
+                            string="Encerrar — Ineficaz"
+                            attrs="{'invisible': [('state','not in',('verify_30d','verify_60d','verify_90d','reopened'))]}"/>
+                    <button name="action_reopen" type="object"
+                            string="Reabrir"
+                            groups="afr_ecm.group_ecm_manager"
+                            attrs="{'invisible': [('state','=','draft')]}"
+                            confirm="Reabrir esta CAPA?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,analysis,plan,implementation,verify_30d,verify_60d,verify_90d,closed_effective"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <h2><field name="title" placeholder="Título resumido da CAPA"/></h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="type"/>
+                            <field name="nc_id"/>
+                            <field name="responsible_id"/>
+                            <field name="directory_id"/>
+                        </group>
+                        <group>
+                            <field name="implementation_date" readonly="1"/>
+                            <field name="closure_decision" readonly="1"
+                                   attrs="{'invisible': [('closure_decision','=',False)]}"/>
+                            <field name="closure_date" readonly="1"
+                                   attrs="{'invisible': [('closure_date','=',False)]}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Descrição" name="description">
+                            <field name="description" placeholder="Descrição da ação corretiva/preventiva..."/>
+                        </page>
+                        <page string="Análise de Risco" name="analysis"
+                              attrs="{'invisible': [('state','=','draft')]}">
+                            <field name="risk_analysis"
+                                   placeholder="Análise de risco do problema e da ação proposta..."/>
+                        </page>
+                        <page string="Plano de Ação" name="plan"
+                              attrs="{'invisible': [('state','in',('draft','analysis'))]}">
+                            <field name="action_plan"
+                                   placeholder="Plano detalhado: o quê, quem, quando, recursos..."/>
+                        </page>
+                        <page string="Verificação de Eficácia" name="verify"
+                              attrs="{'invisible': [('state','in',('draft','analysis','plan'))]}">
+                            <group string="30 dias">
+                                <field name="verify_30d_due_date" readonly="1"/>
+                                <field name="verify_30d_date"/>
+                                <field name="verify_30d_effective"/>
+                                <field name="verify_30d_result"
+                                       placeholder="Resultado da verificação de eficácia em 30 dias..."/>
+                            </group>
+                            <group string="60 dias"
+                                   attrs="{'invisible': [('state','in',('verify_30d',))]}">
+                                <field name="verify_60d_due_date" readonly="1"/>
+                                <field name="verify_60d_date"/>
+                                <field name="verify_60d_effective"/>
+                                <field name="verify_60d_result"
+                                       placeholder="Resultado da verificação de eficácia em 60 dias..."/>
+                            </group>
+                            <group string="90 dias"
+                                   attrs="{'invisible': [('state','in',('verify_30d','verify_60d'))]}">
+                                <field name="verify_90d_due_date" readonly="1"/>
+                                <field name="verify_90d_date"/>
+                                <field name="verify_90d_effective"/>
+                                <field name="verify_90d_result"
+                                       placeholder="Resultado da verificação de eficácia em 90 dias..."/>
+                            </group>
+                        </page>
+                        <page string="Evidências (ECM)" name="evidence">
+                            <field name="attachment_ids" widget="many2many_tags"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== KANBAN ===================== -->
+    <record id="view_afr_ecm_capa_kanban" model="ir.ui.view">
+        <field name="name">afr.ecm.capa.kanban</field>
+        <field name="model">afr.ecm.capa</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="type"/>
+                <field name="responsible_id"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                                <span class="float-right"><field name="type"/></span>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <field name="title"/>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <field name="responsible_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== SEARCH ===================== -->
+    <record id="view_afr_ecm_capa_search" model="ir.ui.view">
+        <field name="name">afr.ecm.capa.search</field>
+        <field name="model">afr.ecm.capa</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="title"/>
+                <field name="nc_id"/>
+                <field name="responsible_id"/>
+                <filter string="Em aberto" name="open"
+                        domain="[('state','not in',('closed_effective','closed_ineffective'))]"/>
+                <filter string="Em verificação" name="verifying"
+                        domain="[('state','in',('verify_30d','verify_60d','verify_90d'))]"/>
+                <filter string="Reabertas" name="reopened" domain="[('state','=','reopened')]"/>
+                <filter string="Encerradas — Eficazes" name="ok" domain="[('state','=','closed_effective')]"/>
+                <filter string="Encerradas — Ineficazes" name="ko" domain="[('state','=','closed_ineffective')]"/>
+                <separator/>
+                <filter string="Verificação 30d vencida" name="overdue_30"
+                        domain="[('state','=','verify_30d'),('verify_30d_due_date','&lt;=',context_today().strftime('%Y-%m-%d'))]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="g_state" context="{'group_by':'state'}"/>
+                    <filter string="Tipo" name="g_type" context="{'group_by':'type'}"/>
+                    <filter string="Responsável" name="g_resp" context="{'group_by':'responsible_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_afr_ecm_capa" model="ir.actions.act_window">
+        <field name="name">CAPA</field>
+        <field name="res_model">afr.ecm.capa</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_afr_ecm_capa_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+</odoo>

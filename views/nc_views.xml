@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== TREE ===================== -->
+    <record id="view_afr_ecm_nc_tree" model="ir.ui.view">
+        <field name="name">afr.ecm.nc.tree</field>
+        <field name="model">afr.ecm.nc</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="severity == 'critical'"
+                  decoration-warning="severity == 'high'"
+                  decoration-muted="state in ('closed', 'escalated_to_capa')">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="severity"/>
+                <field name="origin"/>
+                <field name="responsible_id"/>
+                <field name="capa_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state in ('disposition','investigation','decision_capa')"
+                       decoration-success="state == 'closed'"
+                       decoration-danger="state == 'escalated_to_capa'"/>
+                <field name="create_date" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ===================== FORM ===================== -->
+    <record id="view_afr_ecm_nc_form" model="ir.ui.view">
+        <field name="name">afr.ecm.nc.form</field>
+        <field name="model">afr.ecm.nc</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_start_disposition" type="object"
+                            string="Iniciar Disposição" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','draft')]}"/>
+                    <button name="action_complete_disposition" type="object"
+                            string="Concluir Disposição → Investigação" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','disposition')]}"/>
+                    <button name="action_complete_investigation" type="object"
+                            string="Concluir Investigação → Decisão CAPA" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','investigation')]}"/>
+                    <button name="action_open_capa" type="object"
+                            string="Abrir CAPA" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','decision_capa')]}"/>
+                    <button name="action_close_no_capa" type="object"
+                            string="Encerrar sem CAPA"
+                            attrs="{'invisible': [('state','!=','decision_capa')]}"/>
+                    <button name="action_reopen" type="object"
+                            string="Reabrir"
+                            groups="afr_ecm.group_ecm_manager"
+                            attrs="{'invisible': [('state','=','draft')]}"
+                            confirm="Reabrir a NC voltará ao estado Rascunho. Confirma?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,disposition,investigation,decision_capa,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <h2><field name="title" placeholder="Título resumido da NC"/></h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="severity"/>
+                            <field name="origin"/>
+                            <field name="risk_assessment"/>
+                            <field name="originator_id"/>
+                            <field name="responsible_id"/>
+                        </group>
+                        <group>
+                            <field name="linked_event_type"/>
+                            <field name="linked_event_ref"
+                                   attrs="{'invisible': [('linked_event_type','=',False)]}"/>
+                            <field name="directory_id"/>
+                            <field name="capa_id" readonly="1"
+                                   attrs="{'invisible': [('capa_id','=',False)]}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Descrição" name="description">
+                            <field name="description" placeholder="Descreva a não-conformidade observada..."/>
+                        </page>
+                        <page string="Disposição (24h)" name="disposition"
+                              attrs="{'invisible': [('state','=','draft')]}">
+                            <group>
+                                <field name="disposition_date"/>
+                            </group>
+                            <field name="disposition_text"
+                                   placeholder="Correção imediata aplicada, contenção, isolamento de lote..."/>
+                        </page>
+                        <page string="Investigação / Causa Raiz" name="investigation"
+                              attrs="{'invisible': [('state','in',('draft','disposition'))]}">
+                            <group>
+                                <field name="root_cause_date"/>
+                            </group>
+                            <field name="root_cause_text"
+                                   placeholder="Análise de causa raiz (5 porquês, Ishikawa, etc.)..."/>
+                        </page>
+                        <page string="Encerramento" name="closure"
+                              attrs="{'invisible': [('state','not in',('decision_capa','closed','escalated_to_capa'))]}">
+                            <group>
+                                <field name="closure_date" readonly="1"/>
+                            </group>
+                            <field name="closure_reason"
+                                   placeholder="Justificativa do encerramento (com ou sem CAPA)..."/>
+                        </page>
+                        <page string="Evidências (ECM)" name="evidence">
+                            <field name="attachment_ids" widget="many2many_tags"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== KANBAN ===================== -->
+    <record id="view_afr_ecm_nc_kanban" model="ir.ui.view">
+        <field name="name">afr.ecm.nc.kanban</field>
+        <field name="model">afr.ecm.nc</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="severity"/>
+                <field name="responsible_id"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                                <span class="float-right">
+                                    <field name="severity"/>
+                                </span>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <field name="title"/>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <field name="responsible_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== SEARCH ===================== -->
+    <record id="view_afr_ecm_nc_search" model="ir.ui.view">
+        <field name="name">afr.ecm.nc.search</field>
+        <field name="model">afr.ecm.nc</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="title"/>
+                <field name="responsible_id"/>
+                <field name="linked_event_ref"/>
+                <filter string="Em aberto" name="open"
+                        domain="[('state','not in',('closed','escalated_to_capa'))]"/>
+                <filter string="Em disposição" name="disposition" domain="[('state','=','disposition')]"/>
+                <filter string="Em investigação" name="investigation" domain="[('state','=','investigation')]"/>
+                <filter string="Aguardando decisão CAPA" name="decision" domain="[('state','=','decision_capa')]"/>
+                <filter string="Críticas" name="critical" domain="[('severity','=','critical')]"/>
+                <separator/>
+                <filter string="Encerradas" name="closed" domain="[('state','=','closed')]"/>
+                <filter string="Escaladas p/ CAPA" name="escalated" domain="[('state','=','escalated_to_capa')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="g_state" context="{'group_by':'state'}"/>
+                    <filter string="Severidade" name="g_severity" context="{'group_by':'severity'}"/>
+                    <filter string="Origem" name="g_origin" context="{'group_by':'origin'}"/>
+                    <filter string="Responsável" name="g_resp" context="{'group_by':'responsible_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_afr_ecm_nc" model="ir.actions.act_window">
+        <field name="name">Não-Conformidades</field>
+        <field name="res_model">afr.ecm.nc</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_afr_ecm_nc_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+</odoo>

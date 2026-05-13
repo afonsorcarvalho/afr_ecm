@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="module_category_ecm_areas" model="ir.module.category">
+            <field name="name">AFR ECM — Áreas</field>
+            <field name="description">Grupos de acesso por áreas funcionais da ECM</field>
+            <field name="sequence">21</field>
+        </record>
+
+        <record id="group_ecm_area_sgq" model="res.groups">
+            <field name="name">ECM / Área SGQ</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_operacao" model="res.groups">
+            <field name="name">ECM / Área Operação</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_regulatorio" model="res.groups">
+            <field name="name">ECM / Área Regulatório</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_comercial" model="res.groups">
+            <field name="name">ECM / Área Comercial</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_rh" model="res.groups">
+            <field name="name">ECM / Área RH</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_rh_funcionario" model="res.groups">
+            <field name="name">ECM / Área RH — Funcionário (próprio dossiê)</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_financeiro" model="res.groups">
+            <field name="name">ECM / Área Financeiro</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_ti" model="res.groups">
+            <field name="name">ECM / Área TI</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_eng" model="res.groups">
+            <field name="name">ECM / Área Engenharia &amp; Manutenção</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_sst" model="res.groups">
+            <field name="name">ECM / Área SST</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_diretoria" model="res.groups">
+            <field name="name">ECM / Área Diretoria</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+
+        <record id="group_ecm_area_auditor" model="res.groups">
+            <field name="name">ECM / Auditor Externo (Leitura)</field>
+            <field name="category_id" ref="module_category_ecm_areas"/>
+            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+        </record>
+    </data>
+</odoo>

@@ -4,3 +4,4 @@ from . import test_document_type
 from . import test_approval
 from . import test_expiration
 from . import test_ocr
+from . import test_ti_revocation

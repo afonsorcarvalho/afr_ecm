@@ -12,6 +12,14 @@ class DmsDirectory(models.Model):
         help="Tipo sugerido para arquivos criados neste diretório.",
     )
 
+    description = fields.Html(
+        string="Manual da Pasta",
+        sanitize=True,
+        help="Descrição rica em HTML explicando o que vai nesta pasta, norma de "
+        "referência, exemplos de arquivos, nomenclatura esperada e onde NÃO "
+        "colocar. Aparece como mini-manual no ecm_desktop ao selecionar a pasta.",
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         default_group = self.env.ref("afr_ecm.dms_access_group_ecm_default", raise_if_not_found=False)

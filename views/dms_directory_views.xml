@@ -11,6 +11,11 @@
                         <field name="default_document_type_id"/>
                     </group>
                 </page>
+                <page string="Manual da Pasta" name="ecm_manual">
+                    <field name="description"
+                           widget="html"
+                           placeholder="Descreva o que vai nesta pasta: escopo, norma de referência, exemplos típicos de arquivos, nomenclatura esperada, onde NÃO colocar, confidencialidade default..."/>
+                </page>
             </xpath>
         </field>
     </record>

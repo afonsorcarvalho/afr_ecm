@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Regulatório root submenu under ECM -->
+    <menuitem id="menu_ecm_regulatorio_root"
+              name="Regulatório"
+              parent="afr_ecm.menu_ecm_root"
+              sequence="50"
+              groups="afr_ecm.group_ecm_user"/>
+
+    <!-- NOTIVISA entry under Regulatório -->
+    <menuitem id="menu_ecm_notivisa"
+              name="NOTIVISA (Tecnovigilância)"
+              parent="menu_ecm_regulatorio_root"
+              action="action_afr_ecm_notivisa"
+              sequence="10"/>
+</odoo>

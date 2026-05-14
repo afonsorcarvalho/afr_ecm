@@ -1,21 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
+        <!--
+            rule_ecm_rh_funcionario_own
+            ============================
+            Objetivo: usuários do grupo "ECM / Área RH — Funcionário (próprio dossiê)"
+            enxergam APENAS (read-only):
+              (a) arquivos sob 40_RH/Documentos/...  (políticas coletivas)
+              (b) arquivos sob 40_RH/Registros/...   cujo caminho contenha o nome do
+                  funcionário vinculado ao usuário via hr.employee
+
+            Convenção de nomenclatura obrigatória das pastas individuais:
+              40_RH/Registros/01_Funcionarios_Ativos/MATRICULA_<id>_<employee.name>/
+              40_RH/Registros/02_Funcionarios_Desligados/MATRICULA_<id>_<employee.name>_<date>/
+
+            Heurística: ilike de employee.name em complete_name da pasta.
+            LIMITAÇÃO: funcionários homônimos compartilham visibilidade dos dois dossiês.
+            Corrija adicionando campo employee_id em dms.directory (F4.x).
+
+            Proteção null-employee: usa sentinel "__NO_MATCH_RH_FUNC__" quando o
+            usuário não tem hr.employee vinculado — garante que veja zero arquivos.
+
+            Permissões: read-only. Upload/edição fica com group_ecm_area_rh.
+        -->
         <record id="rule_ecm_rh_funcionario_own" model="ir.rule">
-            <field name="name">DMS File: RH Funcionário → acesso próprio dossiê</field>
+            <field name="name">DMS File: RH Funcionário → acesso próprio dossiê (read-only)</field>
             <field name="model_id" ref="dms.model_dms_file"/>
-            <field name="domain_force">[('directory_id.complete_name', 'ilike', user.login)]</field>
+            <field name="domain_force">['|', ('directory_id.complete_name', 'ilike', '40_RH/Documentos/'), '&amp;', ('directory_id.complete_name', 'ilike', '40_RH/Registros/'), ('directory_id.complete_name', 'ilike', user.employee_id.name or '__NO_MATCH_RH_FUNC__')]</field>
             <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="False"/>
             <field name="groups" eval="[(4, ref('afr_ecm.group_ecm_area_rh_funcionario'))]"/>
         </record>
 
+        <!--
+            rule_ecm_auditor_externo_readonly
+            ==================================
+            Objetivo: auditores externos enxergam SOMENTE os diretórios explicitamente
+            associados a um afr.ecm.audit.scope ativo ao qual o usuário pertence.
+
+            O campo computado res.users.audit_scope_directory_ids (models/audit_scope.py)
+            agrega todos os dms.directory de escopos ativos do usuário. A rule filtra
+            os arquivos a esses diretórios.
+
+            Ciclo de vida:
+              - Gestor ECM cria afr.ecm.audit.scope com auditores + pastas + datas.
+              - Cron diário (cron_audit_scope_expire.xml) arquiva escopos vencidos.
+              - Auditor perde acesso automaticamente no dia seguinte ao fim.
+
+            Segurança: usuário sem escopo ativo recebe directory_ids = [] →
+            domínio ('directory_id', 'in', []) → zero arquivos visíveis.
+        -->
         <record id="rule_ecm_auditor_externo_readonly" model="ir.rule">
-            <field name="name">DMS File: Auditor Externo → leitura apenas</field>
+            <field name="name">DMS File: Auditor Externo → escopo de auditoria ativo</field>
             <field name="model_id" ref="dms.model_dms_file"/>
-            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="domain_force">[('directory_id', 'in', user.audit_scope_directory_ids.ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>

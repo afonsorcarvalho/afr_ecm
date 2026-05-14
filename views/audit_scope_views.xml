@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== TREE ===================== -->
+    <record id="view_afr_ecm_audit_scope_tree" model="ir.ui.view">
+        <field name="name">afr.ecm.audit.scope.tree</field>
+        <field name="model">afr.ecm.audit.scope</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="not active"
+                  decoration-danger="active and end_date &lt; current_date"
+                  default_order="start_date desc">
+                <field name="name"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="auditor_count" string="Auditores"/>
+                <field name="directory_count" string="Pastas"/>
+                <field name="active" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ===================== FORM ===================== -->
+    <record id="view_afr_ecm_audit_scope_form" model="ir.ui.view">
+        <field name="name">afr.ecm.audit.scope.form</field>
+        <field name="model">afr.ecm.audit.scope</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                                class="oe_stat_button" icon="fa-archive"
+                                groups="afr_ecm.group_ecm_manager">
+                            <field name="active" widget="boolean_button"
+                                   options="{'terminology': 'archive'}"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nome do engajamento..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Período">
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group string="Resumo">
+                            <field name="auditor_count" string="Auditores"/>
+                            <field name="directory_count" string="Pastas em escopo"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Auditores" name="auditores">
+                            <field name="auditor_user_ids" widget="many2many_tags"
+                                   domain="[('share', '=', False)]"
+                                   options="{'no_create': True}"
+                                   context="{'show_email': True}"/>
+                        </page>
+                        <page string="Pastas em Escopo" name="pastas">
+                            <field name="directory_ids">
+                                <tree>
+                                    <field name="complete_name"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Observações" name="notas">
+                            <field name="notes" placeholder="Contexto da auditoria: norma, cliente, auditor líder..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== SEARCH ===================== -->
+    <record id="view_afr_ecm_audit_scope_search" model="ir.ui.view">
+        <field name="name">afr.ecm.audit.scope.search</field>
+        <field name="model">afr.ecm.audit.scope</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="auditor_user_ids"/>
+                <filter name="active" string="Ativos" domain="[('active', '=', True)]"/>
+                <filter name="archived" string="Arquivados" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="current" string="Em Curso"
+                        domain="[('start_date', '&lt;=', context_today().strftime('%Y-%m-%d')), ('end_date', '&gt;=', context_today().strftime('%Y-%m-%d')), ('active', '=', True)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_start_year" string="Ano de Início"
+                            context="{'group_by': 'start_date:year'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================== ACTION ===================== -->
+    <record id="action_audit_scope" model="ir.actions.act_window">
+        <field name="name">Escopos de Auditoria</field>
+        <field name="res_model">afr.ecm.audit.scope</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_afr_ecm_audit_scope_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Nenhum escopo de auditoria cadastrado.
+            </p>
+            <p>
+                Crie um escopo para conceder acesso temporário e limitado
+                a auditores externos a pastas específicas do ECM.
+            </p>
+        </field>
+    </record>
+
+</odoo>

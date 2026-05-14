@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!--
+            F4.3.7 — Monthly sterilization cycle summary cron.
+
+            Runs daily at ~04:00 server time.
+            On the first day of each month (or any day thereafter until the
+            next month begins), generates one HTML summary dms.file per
+            equipment for the previous calendar month.
+
+            Idempotent: skips if the target file already exists in the
+            destination folder (10_Operacao/Registros/04_Monitoramentos_Rotineiros/Resumos_Ciclos).
+
+            Soft dependency on afr_supervisorio_ciclos: if that module is not
+            installed, the cron logs a warning and exits gracefully without
+            raising exceptions.
+        -->
+        <record id="cron_monthly_cycle_summary" model="ir.cron">
+            <field name="name">AFR ECM — Sumário Mensal de Ciclos (afr_supervisorio_ciclos → ECM)</field>
+            <field name="model_id" ref="dms.model_dms_file"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_monthly_cycle_summary()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="nextcall" eval="(DateTime.now().replace(hour=4, minute=0, second=0) + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

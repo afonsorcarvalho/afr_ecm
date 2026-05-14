@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== TREE ===================== -->
+    <record id="view_afr_ecm_notivisa_tree" model="ir.ui.view">
+        <field name="name">afr.ecm.notivisa.tree</field>
+        <field name="model">afr.ecm.notivisa</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="severity in ('death', 'critical')"
+                  decoration-warning="severity == 'high'"
+                  decoration-info="state == 'draft'"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-success="state == 'closed'">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="event_type"/>
+                <field name="severity" widget="badge"
+                       decoration-danger="severity in ('death','critical')"
+                       decoration-warning="severity == 'high'"
+                       decoration-info="severity == 'medium'"/>
+                <field name="client_partner_id" optional="show"/>
+                <field name="event_date" optional="show"/>
+                <field name="responsible_id"/>
+                <field name="notivisa_protocol" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'closed'"
+                       decoration-danger="state == 'cancelled'"
+                       decoration-warning="state in ('corrective_action','under_investigation')"/>
+                <field name="analysis_deadline" optional="hide"/>
+                <field name="notified_deadline" optional="hide"/>
+                <field name="investigation_deadline" optional="hide"/>
+                <field name="corrective_deadline" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ===================== FORM ===================== -->
+    <record id="view_afr_ecm_notivisa_form" model="ir.ui.view">
+        <field name="name">afr.ecm.notivisa.form</field>
+        <field name="model">afr.ecm.notivisa</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_start_analysis" type="object"
+                            string="Iniciar Análise" class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                    <button name="action_record_notification" type="object"
+                            string="Registrar Notificação ANVISA" class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'analysis')]}"/>
+                    <button name="action_start_investigation" type="object"
+                            string="Iniciar Investigação" class="oe_highlight"
+                            attrs="{'invisible': [('state', 'not in', ['analysis', 'notified'])]}"/>
+                    <button name="action_record_corrective_action" type="object"
+                            string="Registrar Ação Corretiva" class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'under_investigation')]}"/>
+                    <button name="action_open_capa" type="object"
+                            string="Abrir CAPA"
+                            attrs="{'invisible': [('state', '!=', 'corrective_action')]}"/>
+                    <button name="action_close" type="object"
+                            string="Encerrar" class="oe_highlight"
+                            attrs="{'invisible': [('state', '!=', 'corrective_action')]}"/>
+                    <button name="action_cancel" type="object"
+                            string="Cancelar"
+                            groups="afr_ecm.group_ecm_manager"
+                            attrs="{'invisible': [('state', 'in', ['closed', 'cancelled'])]}"
+                            confirm="Confirma o cancelamento deste NOTIVISA?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,analysis,notified,under_investigation,corrective_action,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                        <h2>
+                            <field name="title" placeholder="Título resumido do evento..."/>
+                        </h2>
+                    </div>
+
+                    <!-- ========== Identificação ========== -->
+                    <group string="Identificação do Evento">
+                        <group>
+                            <field name="event_type"/>
+                            <field name="severity"/>
+                            <field name="event_date"/>
+                            <field name="report_received_date"/>
+                        </group>
+                        <group>
+                            <field name="client_partner_id"/>
+                            <field name="patient_initials"
+                                   help="LGPD: apenas iniciais do paciente (ex: J.S.)"/>
+                            <field name="responsible_id"/>
+                            <field name="directory_id"/>
+                        </group>
+                    </group>
+
+                    <group string="Rastreabilidade do Material">
+                        <field name="lot_id_text" placeholder="Ex: LOT-2025-0042"/>
+                        <field name="equipment_text" placeholder="Ex: Autoclave Serviços 001"/>
+                        <field name="cycle_id_text" placeholder="Ex: CIC/2025/00123"/>
+                    </group>
+
+                    <notebook>
+                        <!-- ========== Descrição ========== -->
+                        <page string="Descrição do Evento" name="description">
+                            <div class="alert alert-warning" role="alert"
+                                 attrs="{'invisible': [('severity', '!=', 'death')]}">
+                                <strong>SEVERIDADE: ÓBITO</strong> — Notificação NOTIVISA obrigatória.
+                                Não é possível encerrar sem protocolo ANVISA registrado.
+                            </div>
+                            <field name="description"
+                                   placeholder="Relato do evento adverso. NÃO inserir dados identificadores do paciente (LGPD)."/>
+                        </page>
+
+                        <!-- ========== Análise ========== -->
+                        <page string="Análise Interna" name="analysis"
+                              attrs="{'invisible': [('state', '=', 'draft')]}">
+                            <group>
+                                <field name="analysis_date" readonly="1"/>
+                                <field name="analysis_deadline" readonly="1"
+                                       attrs="{'invisible': [('analysis_deadline', '=', False)]}"/>
+                            </group>
+                            <field name="analysis_text"
+                                   placeholder="Análise interna do evento. Identifique se requer notificação ANVISA."/>
+                        </page>
+
+                        <!-- ========== Notificação ANVISA ========== -->
+                        <page string="Notificação ANVISA (NOTIVISA)" name="notivisa"
+                              attrs="{'invisible': [('state', '=', 'draft')]}">
+                            <group>
+                                <field name="notivisa_protocol"/>
+                                <field name="notivisa_submission_date"/>
+                                <field name="notified_deadline" readonly="1"
+                                       attrs="{'invisible': [('notified_deadline', '=', False)]}"/>
+                                <field name="notivisa_response_received"/>
+                            </group>
+                            <field name="notivisa_response_text"
+                                   placeholder="Texto da resposta recebida do portal NOTIVISA/ANVISA..."
+                                   attrs="{'invisible': [('notivisa_response_received', '=', False)]}"/>
+                        </page>
+
+                        <!-- ========== Investigação ========== -->
+                        <page string="Investigação" name="investigation"
+                              attrs="{'invisible': [('state', 'not in', ['under_investigation', 'corrective_action', 'closed', 'cancelled'])]}">
+                            <group>
+                                <field name="investigation_date" readonly="1"/>
+                                <field name="investigation_deadline" readonly="1"
+                                       attrs="{'invisible': [('investigation_deadline', '=', False)]}"/>
+                            </group>
+                            <field name="investigation_text"
+                                   placeholder="Investigação de causa raiz. Ferramentas: Ishikawa, 5 Porquês, etc."/>
+                        </page>
+
+                        <!-- ========== Ação Corretiva ========== -->
+                        <page string="Ação Corretiva" name="corrective"
+                              attrs="{'invisible': [('state', 'not in', ['corrective_action', 'closed', 'cancelled'])]}">
+                            <group>
+                                <field name="corrective_action_date" readonly="1"/>
+                                <field name="corrective_deadline" readonly="1"
+                                       attrs="{'invisible': [('corrective_deadline', '=', False)]}"/>
+                                <field name="corrective_action_capa_id"/>
+                                <field name="recall_id_text"/>
+                            </group>
+                            <field name="corrective_action_text"
+                                   placeholder="Descreva a ação corretiva implementada..."/>
+                        </page>
+
+                        <!-- ========== Encerramento ========== -->
+                        <page string="Encerramento" name="closure"
+                              attrs="{'invisible': [('state', 'not in', ['corrective_action', 'closed', 'cancelled'])]}">
+                            <group>
+                                <field name="closure_date" readonly="1"/>
+                                <field name="closure_outcome"/>
+                                <field name="cancel_reason"
+                                       attrs="{'invisible': [('state', '!=', 'cancelled')]}"/>
+                            </group>
+                            <field name="closure_summary"
+                                   placeholder="Sumário de encerramento: conclusões, ações tomadas, aprendizados..."/>
+                        </page>
+
+                        <!-- ========== Evidências ========== -->
+                        <page string="Evidências (ECM)" name="evidence">
+                            <field name="attachment_ids" widget="many2many_tags"/>
+                        </page>
+
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== KANBAN ===================== -->
+    <record id="view_afr_ecm_notivisa_kanban" model="ir.ui.view">
+        <field name="name">afr.ecm.notivisa.kanban</field>
+        <field name="model">afr.ecm.notivisa</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="severity"/>
+                <field name="event_type"/>
+                <field name="responsible_id"/>
+                <field name="state"/>
+                <field name="notivisa_protocol"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click
+                            #{record.severity.raw_value === 'death' ? 'border-danger' : ''}
+                            #{record.severity.raw_value === 'critical' ? 'border-warning' : ''}">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                                <span class="float-right badge badge-pill badge-light">
+                                    <field name="severity"/>
+                                </span>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div><field name="title"/></div>
+                                <div class="text-muted small">
+                                    <field name="event_type"/>
+                                </div>
+                                <div t-if="record.notivisa_protocol.raw_value" class="text-success small">
+                                    Protocolo: <field name="notivisa_protocol"/>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <field name="responsible_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== SEARCH ===================== -->
+    <record id="view_afr_ecm_notivisa_search" model="ir.ui.view">
+        <field name="name">afr.ecm.notivisa.search</field>
+        <field name="model">afr.ecm.notivisa</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="title"/>
+                <field name="client_partner_id"/>
+                <field name="responsible_id"/>
+                <field name="notivisa_protocol"/>
+                <!-- State filters -->
+                <filter string="Rascunho" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Em Análise" name="analysis" domain="[('state','=','analysis')]"/>
+                <filter string="Notificado ANVISA" name="notified" domain="[('state','=','notified')]"/>
+                <filter string="Em Investigação" name="investigating" domain="[('state','=','under_investigation')]"/>
+                <filter string="Ação Corretiva" name="corrective" domain="[('state','=','corrective_action')]"/>
+                <filter string="Encerrados" name="closed" domain="[('state','=','closed')]"/>
+                <filter string="Cancelados" name="cancelled" domain="[('state','=','cancelled')]"/>
+                <filter string="Em Aberto" name="open"
+                        domain="[('state','not in',['closed','cancelled'])]"/>
+                <separator/>
+                <!-- Severity filters -->
+                <filter string="Óbito" name="death" domain="[('severity','=','death')]"/>
+                <filter string="Crítica" name="critical" domain="[('severity','=','critical')]"/>
+                <filter string="Alta" name="high" domain="[('severity','=','high')]"/>
+                <separator/>
+                <!-- Event type filters -->
+                <filter string="Evento Adverso" name="adverse"
+                        domain="[('event_type','=','adverse_event')]"/>
+                <filter string="Queixa Técnica" name="complaint"
+                        domain="[('event_type','=','technical_complaint')]"/>
+                <!-- Overdue SLA -->
+                <separator/>
+                <filter string="SLA Análise Vencido" name="overdue_analysis"
+                        domain="[('state','=','analysis'),('analysis_deadline','&lt;=',context_today().strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                <filter string="SLA Investigação Vencido" name="overdue_investigation"
+                        domain="[('state','=','under_investigation'),('investigation_deadline','&lt;=',context_today().strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                <!-- No notivisa protocol -->
+                <filter string="Sem Protocolo ANVISA" name="no_protocol"
+                        domain="[('state','not in',['draft','cancelled']),('notivisa_protocol','=',False)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="g_state" context="{'group_by': 'state'}"/>
+                    <filter string="Severidade" name="g_severity" context="{'group_by': 'severity'}"/>
+                    <filter string="Tipo de Evento" name="g_type" context="{'group_by': 'event_type'}"/>
+                    <filter string="Responsável" name="g_resp" context="{'group_by': 'responsible_id'}"/>
+                    <filter string="Cliente" name="g_client" context="{'group_by': 'client_partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================== ACTION ===================== -->
+    <record id="action_afr_ecm_notivisa" model="ir.actions.act_window">
+        <field name="name">NOTIVISA — Tecnovigilância</field>
+        <field name="res_model">afr.ecm.notivisa</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_afr_ecm_notivisa_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+</odoo>

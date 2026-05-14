@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== TREE ===================== -->
+    <record id="view_afr_ecm_recall_tree" model="ir.ui.view">
+        <field name="name">afr.ecm.recall.tree</field>
+        <field name="model">afr.ecm.recall</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="severity == 'critical'"
+                  decoration-warning="severity == 'high'"
+                  decoration-muted="state in ('closed', 'cancelled')">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="trigger_type"/>
+                <field name="severity"/>
+                <field name="lot_id_text" optional="show"/>
+                <field name="cycle_id_text" optional="hide"/>
+                <field name="equipment_text" optional="hide"/>
+                <field name="responsible_id"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state in ('decision','notification','collection_in_progress','disposal')"
+                       decoration-success="state == 'closed'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="create_date" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ===================== FORM ===================== -->
+    <record id="view_afr_ecm_recall_form" model="ir.ui.view">
+        <field name="name">afr.ecm.recall.form</field>
+        <field name="model">afr.ecm.recall</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_take_decision" type="object"
+                            string="Tomar Decisão" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','draft')]}"/>
+                    <button name="action_notify_clients" type="object"
+                            string="Notificar Clientes" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','decision')]}"/>
+                    <button name="action_start_collection" type="object"
+                            string="Iniciar Coleta" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','notification')]}"/>
+                    <button name="action_complete_collection" type="object"
+                            string="Concluir Coleta → Descarte" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','collection_in_progress')]}"/>
+                    <button name="action_record_disposal" type="object"
+                            string="Registrar Descarte e Encerrar" class="oe_highlight"
+                            attrs="{'invisible': [('state','!=','disposal')]}"/>
+                    <button name="action_cancel" type="object"
+                            string="Cancelar"
+                            groups="afr_ecm.group_ecm_manager"
+                            attrs="{'invisible': [('state','in',('closed','cancelled'))]}"
+                            confirm="Cancelar este recall encerra o processo sem disposição. Confirma?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,decision,notification,collection_in_progress,disposal,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <h2><field name="title" placeholder="Título resumido do recall"/></h2>
+                    </div>
+                    <group>
+                        <group string="Identificação">
+                            <field name="severity"/>
+                            <field name="trigger_type"/>
+                            <field name="trigger_event_ref"/>
+                            <field name="bi_positive_file_id"
+                                   attrs="{'invisible': [('trigger_type','!=','bi_positive')]}"/>
+                            <field name="responsible_id"/>
+                        </group>
+                        <group string="Escopo do Lote">
+                            <field name="cycle_id_text"/>
+                            <field name="lot_id_text"/>
+                            <field name="equipment_text"/>
+                            <field name="directory_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="NOTIVISA">
+                            <field name="notivisa_required"/>
+                            <field name="notivisa_ref"
+                                   attrs="{'invisible': [('notivisa_required','=',False)]}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Clientes Afetados" name="clients">
+                            <field name="affected_clients_ids" widget="many2many_tags"/>
+                        </page>
+                        <page string="Decisão" name="decision"
+                              attrs="{'invisible': [('state','=','draft')]}">
+                            <group>
+                                <field name="decision_date"/>
+                            </group>
+                            <field name="decision_text"
+                                   placeholder="Racional técnico/regulatório que motivou abrir o recall..."/>
+                        </page>
+                        <page string="Notificação" name="notification"
+                              attrs="{'invisible': [('state','in',('draft','decision'))]}">
+                            <group>
+                                <field name="notification_date"/>
+                            </group>
+                            <field name="notification_text"
+                                   placeholder="Texto / resumo da comunicação enviada aos clientes..."/>
+                        </page>
+                        <page string="Coleta" name="collection"
+                              attrs="{'invisible': [('state','in',('draft','decision','notification'))]}">
+                            <group>
+                                <field name="collection_start_date"/>
+                            </group>
+                            <field name="collection_progress_text"
+                                   placeholder="Progresso da coleta (volumes, motoristas, datas)..."/>
+                        </page>
+                        <page string="Disposição Final" name="disposal"
+                              attrs="{'invisible': [('state','in',('draft','decision','notification','collection_in_progress'))]}">
+                            <group>
+                                <field name="disposal_date"/>
+                            </group>
+                            <field name="disposal_text"
+                                   placeholder="Destino final (incinerado, devolvido ao fabricante, outro)..."/>
+                        </page>
+                        <page string="Encerramento" name="closure"
+                              attrs="{'invisible': [('state','not in',('disposal','closed','cancelled'))]}">
+                            <group>
+                                <field name="closure_date" readonly="1"/>
+                            </group>
+                            <field name="closure_summary"
+                                   placeholder="Sumário executivo do recall — eficácia, lições aprendidas..."/>
+                        </page>
+                        <page string="Evidências (ECM)" name="evidence">
+                            <field name="attachment_ids" widget="many2many_tags"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== KANBAN ===================== -->
+    <record id="view_afr_ecm_recall_kanban" model="ir.ui.view">
+        <field name="name">afr.ecm.recall.kanban</field>
+        <field name="model">afr.ecm.recall</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="severity"/>
+                <field name="responsible_id"/>
+                <field name="state"/>
+                <field name="lot_id_text"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <strong><field name="name"/></strong>
+                                <span class="float-right">
+                                    <field name="severity"/>
+                                </span>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <field name="title"/>
+                                <div t-if="record.lot_id_text.raw_value">
+                                    <small>Lote: <field name="lot_id_text"/></small>
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <field name="responsible_id" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ===================== SEARCH ===================== -->
+    <record id="view_afr_ecm_recall_search" model="ir.ui.view">
+        <field name="name">afr.ecm.recall.search</field>
+        <field name="model">afr.ecm.recall</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="title"/>
+                <field name="lot_id_text"/>
+                <field name="cycle_id_text"/>
+                <field name="responsible_id"/>
+                <field name="affected_clients_ids"/>
+                <filter string="Em aberto" name="open"
+                        domain="[('state','not in',('closed','cancelled'))]"/>
+                <filter string="Decisão" name="decision" domain="[('state','=','decision')]"/>
+                <filter string="Notificação" name="notification" domain="[('state','=','notification')]"/>
+                <filter string="Coleta" name="collection" domain="[('state','=','collection_in_progress')]"/>
+                <filter string="Descarte" name="disposal" domain="[('state','=','disposal')]"/>
+                <separator/>
+                <filter string="Críticos" name="critical" domain="[('severity','=','critical')]"/>
+                <filter string="BI Positivo" name="bi_pos" domain="[('trigger_type','=','bi_positive')]"/>
+                <filter string="Requer NOTIVISA" name="notivisa" domain="[('notivisa_required','=',True)]"/>
+                <separator/>
+                <filter string="Encerrados" name="closed" domain="[('state','=','closed')]"/>
+                <filter string="Cancelados" name="cancelled" domain="[('state','=','cancelled')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Estado" name="g_state" context="{'group_by':'state'}"/>
+                    <filter string="Severidade" name="g_severity" context="{'group_by':'severity'}"/>
+                    <filter string="Tipo de Gatilho" name="g_trigger" context="{'group_by':'trigger_type'}"/>
+                    <filter string="Responsável" name="g_resp" context="{'group_by':'responsible_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_afr_ecm_recall" model="ir.actions.act_window">
+        <field name="name">Recalls</field>
+        <field name="res_model">afr.ecm.recall</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_afr_ecm_recall_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!--
+            Cron: Expiração de escopos de auditoria
+            =========================================
+            Executa diariamente. Arquiva (active = False) todos os registros
+            afr.ecm.audit.scope cujo end_date seja anterior a hoje.
+
+            Após arquivar, a record rule rule_ecm_auditor_externo_readonly
+            avalia user.audit_scope_directory_ids em runtime; como o escopo
+            foi inativado, o campo retorna [] e o auditor perde acesso
+            imediatamente na próxima requisição.
+        -->
+        <record id="cron_audit_scope_expire" model="ir.cron">
+            <field name="name">AFR ECM: arquivar escopos de auditoria vencidos</field>
+            <field name="model_id" ref="afr_ecm.model_afr_ecm_audit_scope"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_expire_audit_scopes()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

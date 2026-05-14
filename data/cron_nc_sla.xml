@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cron_nc_sla_24h_check" model="ir.cron">
+        <field name="name">AFR ECM — NC SLA 24h Disposição (escalação horária)</field>
+        <field name="model_id" ref="model_afr_ecm_nc"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_nc_sla_24h_check()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="nextcall" eval="(DateTime.now() + timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M:00')"/>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

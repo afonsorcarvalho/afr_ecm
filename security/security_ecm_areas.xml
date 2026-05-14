@@ -76,7 +76,18 @@
         <record id="group_ecm_area_auditor" model="res.groups">
             <field name="name">ECM / Auditor Externo (Leitura)</field>
             <field name="category_id" ref="module_category_ecm_areas"/>
-            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+            <!-- NÃO implica group_ecm_user (que dá acesso amplo via dms.access.group ECM Padrão).
+                 Acesso é exclusivo via Auditor_Externo dms.access.group sincronizado
+                 dinamicamente por audit_scope (_sync_auditor_dms_access_group). -->
         </record>
+        <!-- Sincroniza Auditor_Externo dms.access.group para vincular ao res.groups
+             group_ecm_area_auditor (assim auditor com SÓ esse grupo entra no scope dinâmico) -->
+        <function model="dms.access.group" name="write">
+            <function model="dms.access.group" name="search">
+                <value eval="[('name','=','Auditor_Externo')]"/>
+                <value>1</value>
+            </function>
+            <value eval="{'group_ids': [(6, 0, [ref('afr_ecm.group_ecm_area_auditor')])], 'directory_ids': [(5,)]}"/>
+        </function>
     </data>
 </odoo>

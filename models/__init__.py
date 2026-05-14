@@ -12,4 +12,10 @@ from . import dms_file_license_renewal
 from . import hr_employee_revocation
 from . import dms_file_revocation_cron
 from . import nc
+from . import nc_sla_check
 from . import capa
+from . import recall
+from . import dms_file_recall_trigger
+from . import notivisa
+from . import dms_file_cycle_summary
+from . import audit_scope

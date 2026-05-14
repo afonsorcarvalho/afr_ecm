@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <!-- noupdate="0": record rules são configuração (não dados de usuário);
+         devem ser re-sincronizadas a cada upgrade. F4.3.10: noupdate era "1"
+         e impedia atualização do domain_force de rules pré-existentes. -->
+    <data noupdate="0">
         <!--
             rule_ecm_rh_funcionario_own
             ============================
@@ -37,12 +40,14 @@
         <!--
             rule_ecm_auditor_externo_readonly
             ==================================
-            Objetivo: auditores externos enxergam SOMENTE os diretórios explicitamente
-            associados a um afr.ecm.audit.scope ativo ao qual o usuário pertence.
+            Objetivo: auditores externos enxergam SOMENTE arquivos nos diretórios
+            explicitamente associados a um afr.ecm.audit.scope ativo ao qual o
+            usuário pertence, incluindo subpastas descendentes.
 
             O campo computado res.users.audit_scope_directory_ids (models/audit_scope.py)
-            agrega todos os dms.directory de escopos ativos do usuário. A rule filtra
-            os arquivos a esses diretórios.
+            agrega todos os dms.directory de escopos ativos do usuário. A rule usa
+            `child_of` em vez de `in` para que arquivos em subpastas descendentes
+            dos diretórios em escopo também sejam visíveis.
 
             Ciclo de vida:
               - Gestor ECM cria afr.ecm.audit.scope com auditores + pastas + datas.
@@ -50,17 +55,51 @@
               - Auditor perde acesso automaticamente no dia seguinte ao fim.
 
             Segurança: usuário sem escopo ativo recebe directory_ids = [] →
-            domínio ('directory_id', 'in', []) → zero arquivos visíveis.
+            domínio ('directory_id', 'child_of', []) → zero arquivos visíveis.
         -->
         <record id="rule_ecm_auditor_externo_readonly" model="ir.rule">
-            <field name="name">DMS File: Auditor Externo → escopo de auditoria ativo</field>
+            <field name="name">DMS File: Auditor Externo → escopo de auditoria ativo (+ descendentes)</field>
             <field name="model_id" ref="dms.model_dms_file"/>
-            <field name="domain_force">[('directory_id', 'in', user.audit_scope_directory_ids.ids)]</field>
+            <field name="domain_force">[('directory_id', 'child_of', user.audit_scope_directory_ids.ids)]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="False"/>
             <field name="groups" eval="[(4, ref('afr_ecm.group_ecm_area_auditor'))]"/>
+        </record>
+
+        <!--
+            rule_ecm_auditor_directory_tree
+            ================================
+            Objetivo: auditores externos podem navegar a árvore de pastas do ECM
+            em ambas as direções:
+              - Pastas nos escopos ativos E todas as suas subpastas descendentes
+                (`child_of`) → conteúdo auditável.
+              - Pastas ancestrais até a raiz (`parent_of`) → permite que o OCA dms
+                mostre o caminho completo na árvore de navegação.
+
+            Operadores `child_of`/`parent_of` funcionam com o campo `parent_path`
+            (hierarquia materializada) que dms.directory hereda de models.Model
+            via _parent_name='parent_id'.
+
+            Permissões: read-only. Auditor não pode criar, editar ou excluir pastas.
+
+            F4.3.10: substitui a sincronização dinâmica de Auditor_Externo
+            dms.access.group.directory_ids que era feita pelos hooks
+            create/write/unlink de afr.ecm.audit.scope.
+        -->
+        <record id="rule_ecm_auditor_directory_tree" model="ir.rule">
+            <field name="name">ECM Auditor Externo — Pastas no Escopo + Parents</field>
+            <field name="model_id" ref="dms.model_dms_directory"/>
+            <field name="groups" eval="[(4, ref('afr_ecm.group_ecm_area_auditor'))]"/>
+            <field name="domain_force">['|',
+                ('id', 'child_of', user.audit_scope_directory_ids.ids),
+                ('id', 'parent_of', user.audit_scope_directory_ids.ids)
+            ]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
         </record>
     </data>
 </odoo>

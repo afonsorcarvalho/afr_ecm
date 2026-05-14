@@ -12,3 +12,4 @@ from . import test_nc_sla
 from . import test_record_rules_refinement
 from . import test_license_renewal
 from . import test_nc_capa
+from . import test_audit_scope_tree_rule

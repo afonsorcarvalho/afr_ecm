@@ -51,10 +51,12 @@
                     </group>
                     <notebook>
                         <page string="Auditores" name="auditores">
+                            <separator string="Auditores Externos do Engajamento"/>
                             <field name="auditor_user_ids" widget="many2many_tags"
                                    domain="[('share', '=', False)]"
                                    options="{'no_create': True}"
-                                   context="{'show_email': True}"/>
+                                   context="{'show_email': True}"
+                                   placeholder="Adicione os usuários auditores..."/>
                         </page>
                         <page string="Pastas em Escopo" name="pastas">
                             <field name="directory_ids">

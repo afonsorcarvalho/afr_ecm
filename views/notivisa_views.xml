@@ -180,7 +180,9 @@
 
                         <!-- ========== Evidências ========== -->
                         <page string="Evidências (ECM)" name="evidence">
-                            <field name="attachment_ids" widget="many2many_tags"/>
+                            <separator string="Arquivos de Evidência no ECM"/>
+                            <field name="attachment_ids" widget="many2many_tags"
+                                   placeholder="Vincule arquivos do ECM como evidência..."/>
                         </page>
 
                     </notebook>

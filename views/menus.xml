@@ -21,6 +21,7 @@
 
     <menuitem id="menu_ecm_audit_root" name="Auditoria" parent="menu_ecm_root" sequence="80" groups="group_ecm_manager"/>
     <menuitem id="menu_ecm_audit" name="Log de Eventos" parent="menu_ecm_audit_root" action="action_audit_log" sequence="10"/>
+    <menuitem id="menu_ecm_audit_scopes" name="Escopos de Auditoria" parent="menu_ecm_audit_root" action="action_audit_scope" sequence="20"/>
 
     <menuitem id="menu_ecm_config" name="Configuração" parent="menu_ecm_root" sequence="90" groups="group_ecm_admin"/>
     <menuitem id="menu_ecm_doc_types" name="Tipos de Documento" parent="menu_ecm_config" action="action_doc_type" sequence="10"/>

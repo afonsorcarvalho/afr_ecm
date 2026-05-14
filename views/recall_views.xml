@@ -87,7 +87,9 @@
                     </group>
                     <notebook>
                         <page string="Clientes Afetados" name="clients">
-                            <field name="affected_clients_ids" widget="many2many_tags"/>
+                            <separator string="Clientes a Notificar"/>
+                            <field name="affected_clients_ids" widget="many2many_tags"
+                                   placeholder="Adicione os hospitais/clientes afetados pelo recall..."/>
                         </page>
                         <page string="Decisão" name="decision"
                               attrs="{'invisible': [('state','=','draft')]}">
@@ -130,7 +132,9 @@
                                    placeholder="Sumário executivo do recall — eficácia, lições aprendidas..."/>
                         </page>
                         <page string="Evidências (ECM)" name="evidence">
-                            <field name="attachment_ids" widget="many2many_tags"/>
+                            <separator string="Arquivos de Evidência no ECM"/>
+                            <field name="attachment_ids" widget="many2many_tags"
+                                   placeholder="Vincule arquivos do ECM como evidência..."/>
                         </page>
                     </notebook>
                 </sheet>

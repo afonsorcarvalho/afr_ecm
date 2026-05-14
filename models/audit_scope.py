@@ -4,17 +4,19 @@ Registra quais pastas (`dms.directory`) um grupo de auditores externos pode
 visualizar durante um engajamento de auditoria com prazo definido.
 
 O campo computado `res.users.audit_scope_directory_ids` é lido diretamente
-pela record rule `rule_ecm_auditor_externo_readonly` para filtrar arquivos
-(`dms.file`) acessíveis ao auditor.
+pelas record rules:
+  - `rule_ecm_auditor_externo_readonly` (dms.file) — filtra arquivos visíveis.
+  - `rule_ecm_auditor_directory_tree` (dms.directory) — permite navegar a
+    árvore de pastas (escopos + parents) sem sincronização dinâmica.
 
 Ciclo de vida:
   - Gestor ECM (group_ecm_manager) cria o escopo com auditores + pastas + datas.
   - Cron diário `_cron_expire_audit_scopes()` arquiva escopos vencidos (end_date < hoje).
   - Auditores perdem acesso automaticamente no dia seguinte ao fim do engajamento.
 
-Nota de modelagem: este modelo não é instalado automaticamente pelo
-`__manifest__.py`. A integração é especificada no arquivo de patch
-`MANIFEST_PATCH_F4_3_9.md` e aplicada na sprint seguinte (F4.3.10).
+F4.3.10: removida a sincronização dinâmica de Auditor_Externo dms.access.group
+via hooks create/write/unlink. O controle de acesso é agora inteiramente por
+ir.rule (stateless, por usuário, sem race conditions de cron).
 """
 import logging
 from datetime import date
@@ -114,7 +116,12 @@ class AfrEcmAuditScope(models.Model):
 
     @api.model
     def _cron_expire_audit_scopes(self):
-        """Arquiva escopos cujo end_date é anterior a hoje + sync access.group."""
+        """Arquiva escopos cujo end_date é anterior a hoje.
+
+        F4.3.10: a sincronização com Auditor_Externo dms.access.group foi
+        removida. O acesso é controlado inteiramente por ir.rule stateless
+        via res.users.audit_scope_directory_ids (computed em tempo real).
+        """
         today = date.today()
         expired = self.search([
             ("active", "=", True),
@@ -127,49 +134,6 @@ class AfrEcmAuditScope(models.Model):
                 len(expired),
                 expired.mapped("name"),
             )
-        # Sync sempre (mesmo sem expirados) p/ garantir estado correto
-        self._sync_auditor_dms_access_group()
-
-    @api.model
-    def _sync_auditor_dms_access_group(self):
-        """Recalcula directory_ids do dms.access.group Auditor_Externo a partir
-        dos escopos ativos no momento. Chamado após create/write/expire.
-        """
-        AccessGroup = self.env["dms.access.group"].sudo()
-        group = AccessGroup.search([("name", "=", "Auditor_Externo")], limit=1)
-        if not group:
-            _logger.warning("Auditor_Externo dms.access.group não encontrado — skip sync.")
-            return
-        today = date.today()
-        active = self.sudo().search([
-            ("active", "=", True),
-            ("start_date", "<=", today),
-            ("end_date", ">=", today),
-        ])
-        dirs = active.mapped("directory_ids")
-        if group.directory_ids.ids != dirs.ids:
-            group.write({"directory_ids": [(6, 0, dirs.ids)]})
-            _logger.info(
-                "AFR ECM: Auditor_Externo dms.access.group sincronizado com %d pasta(s): %s",
-                len(dirs), dirs.mapped("complete_name"),
-            )
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        recs = super().create(vals_list)
-        recs._sync_auditor_dms_access_group()
-        return recs
-
-    def write(self, vals):
-        res = super().write(vals)
-        if any(k in vals for k in ("directory_ids", "auditor_user_ids", "active", "start_date", "end_date")):
-            self._sync_auditor_dms_access_group()
-        return res
-
-    def unlink(self):
-        res = super().unlink()
-        self.env["afr.ecm.audit.scope"]._sync_auditor_dms_access_group()
-        return res
 
     # ------------------------------------------------------------------
     # Helpers
@@ -198,9 +162,12 @@ class AfrEcmAuditScope(models.Model):
 class ResUsersAuditScope(models.Model):
     """Extensão de res.users para expor diretórios de auditoria.
 
-    O campo `audit_scope_directory_ids` é lido diretamente pela record rule
-    `rule_ecm_auditor_externo_readonly` no domínio:
-        [('directory_id', 'in', user.audit_scope_directory_ids.ids)]
+    O campo `audit_scope_directory_ids` é lido diretamente pelas record rules:
+      - `rule_ecm_auditor_externo_readonly` (dms.file):
+            [('directory_id', 'child_of', user.audit_scope_directory_ids.ids)]
+      - `rule_ecm_auditor_directory_tree` (dms.directory):
+            ['|', ('id', 'child_of', user.audit_scope_directory_ids.ids),
+                  ('id', 'parent_of', user.audit_scope_directory_ids.ids)]
 
     O campo é computado sem store para garantir que sempre reflita o estado
     atual dos escopos ativos.

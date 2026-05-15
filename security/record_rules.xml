@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
+        <!--
+            Public: leitura geral para qualquer Internal User.
+        -->
         <record id="rule_dms_file_public" model="ir.rule">
             <field name="name">DMS File: público leitura geral</field>
             <field name="model_id" ref="dms.model_dms_file"/>
@@ -12,38 +15,70 @@
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         </record>
 
-        <record id="rule_dms_file_internal" model="ir.rule">
-            <field name="name">DMS File: interno → grupo ECM Usuário</field>
+        <!--
+            Regra unificada para ECM Usuário.
+
+            Histórico (afr_ecm 16.0.2.0.1 — corrige bug semântico):
+              Versões anteriores tinham 3 regras separadas para o mesmo
+              grupo (`internal`, `restricted`, `confidential`). Odoo
+              combina regras do MESMO grupo por OR. As regras com
+              domain `!=restricted` e `!=confidential` se sabotavam
+              mutuamente, permitindo que qualquer ecm_user visse
+              documentos restritos/confidenciais de OUTROS donos.
+
+              Solução: UMA única regra com domínio completo. Sem
+              OR-collapse possível porque há apenas uma regra.
+
+              As 3 regras antigas (rule_dms_file_internal,
+              rule_dms_file_restricted, rule_dms_file_confidential)
+              foram removidas e são limpas em
+              migrations/16.0.2.0.1/post-migration.py via unlink por
+              xmlid antes do upgrade aplicar este arquivo.
+
+            Domínio:
+              - public           → todos veem
+              - internal         → todos os ecm_user veem
+              - restricted       → apenas dono
+              - confidential     → apenas dono
+              (manager vê tudo via rule_dms_file_manager abaixo)
+        -->
+        <record id="rule_dms_file_ecm_user" model="ir.rule">
+            <field name="name">DMS File: visibilidade por confidencialidade (ECM Usuário)</field>
             <field name="model_id" ref="dms.model_dms_file"/>
-            <field name="domain_force">[('confidentiality','=','internal')]</field>
+            <field name="domain_force">[
+                '|', '|', '|',
+                    ('confidentiality', '=', 'public'),
+                    ('confidentiality', '=', 'internal'),
+                    '&amp;', ('confidentiality', '=', 'restricted'), ('create_uid', '=', user.id),
+                    '&amp;', ('confidentiality', '=', 'confidential'), ('create_uid', '=', user.id)
+            ]</field>
             <field name="groups" eval="[(4, ref('group_ecm_user'))]"/>
         </record>
 
-        <record id="rule_dms_file_restricted" model="ir.rule">
-            <field name="name">DMS File: restrito → dono ou gestor</field>
-            <field name="model_id" ref="dms.model_dms_file"/>
-            <field name="domain_force">['|', ('create_uid','=',user.id), ('confidentiality','!=','restricted')]</field>
-            <field name="groups" eval="[(4, ref('group_ecm_user'))]"/>
-        </record>
-
-        <record id="rule_dms_file_restricted_manager" model="ir.rule">
-            <field name="name">DMS File: restrito → gestor vê tudo</field>
+        <!--
+            Manager: vê tudo, independente de dono ou confidencialidade.
+        -->
+        <record id="rule_dms_file_manager" model="ir.rule">
+            <field name="name">DMS File: gestor vê tudo</field>
             <field name="model_id" ref="dms.model_dms_file"/>
             <field name="domain_force">[(1,'=',1)]</field>
             <field name="groups" eval="[(4, ref('group_ecm_manager'))]"/>
         </record>
 
-        <record id="rule_dms_file_confidential" model="ir.rule">
-            <field name="name">DMS File: confidencial → apenas gestor/dono</field>
-            <field name="model_id" ref="dms.model_dms_file"/>
-            <field name="domain_force">['|', ('create_uid','=',user.id), ('confidentiality','!=','confidential')]</field>
-            <field name="groups" eval="[(4, ref('group_ecm_user'))]"/>
-        </record>
-
+        <!--
+            Approval Action: usuário ECM vê actions dos files que pode ler.
+            Aqui também unificamos: a regra antiga restringia para
+            public/internal OU dono. Mantemos essa lógica explícita para
+            evitar surpresas com OR-collapse.
+        -->
         <record id="rule_approval_action_user" model="ir.rule">
             <field name="name">Approval Action: usuário ECM → herda visibilidade do file</field>
             <field name="model_id" ref="model_afr_ecm_approval_action"/>
-            <field name="domain_force">['|', ('file_id.create_uid','=',user.id), ('file_id.confidentiality','in',['public','internal'])]</field>
+            <field name="domain_force">[
+                '|',
+                    ('file_id.create_uid', '=', user.id),
+                    ('file_id.confidentiality', 'in', ['public', 'internal'])
+            ]</field>
             <field name="groups" eval="[(4, ref('group_ecm_user'))]"/>
         </record>
 

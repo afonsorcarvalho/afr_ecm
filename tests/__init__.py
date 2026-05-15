@@ -7,3 +7,4 @@ from . import test_ocr
 from . import test_ti_revocation
 from . import test_record_rules_refinement
 from . import test_audit_scope_tree_rule
+from . import test_confidentiality_rules

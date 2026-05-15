@@ -56,13 +56,19 @@ class TestRhFuncionarioRule(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        # dms.access.group permissivo para setup de dados (admin usa sudo)
+        # dms.access.group permissivo para setup de dados (admin usa sudo).
+        # F4.4: inclui group_ecm_area_rh_funcionario porque esse grupo já não
+        # implica group_ecm_user — sem ele no ACL, o funcionário não passa
+        # pela ACL do dms.access.group e a ir.rule nunca é avaliada.
         cls.access_group = cls.env["dms.access.group"].create({
             "name": "F439 RH Test Access",
             "perm_create": True,
             "perm_write": True,
             "perm_unlink": True,
-            "group_ids": [(4, cls.env.ref("afr_ecm.group_ecm_user").id)],
+            "group_ids": [(6, 0, [
+                cls.env.ref("afr_ecm.group_ecm_user").id,
+                cls.env.ref("afr_ecm.group_ecm_area_rh_funcionario").id,
+            ])],
         })
         cls.storage = cls.env["dms.storage"].create({
             "name": "F439 RH Storage",

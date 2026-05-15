@@ -14,8 +14,8 @@
                   funcionário vinculado ao usuário via hr.employee
 
             Convenção de nomenclatura obrigatória das pastas individuais:
-              40_RH/Registros/01_Funcionarios_Ativos/MATRICULA_<id>_<employee.name>/
-              40_RH/Registros/02_Funcionarios_Desligados/MATRICULA_<id>_<employee.name>_<date>/
+              40_RH / Registros / 01_Funcionarios_Ativos / MATRICULA_<id>_<employee.name>/
+              40_RH / Registros / 02_Funcionarios_Desligados / MATRICULA_<id>_<employee.name>_<date>/
 
             Heurística: ilike de employee.name em complete_name da pasta.
             LIMITAÇÃO: funcionários homônimos compartilham visibilidade dos dois dossiês.
@@ -25,11 +25,17 @@
             usuário não tem hr.employee vinculado — garante que veja zero arquivos.
 
             Permissões: read-only. Upload/edição fica com group_ecm_area_rh.
+
+            IMPORTANTE: `dms.directory.complete_name` (OCA dms) usa separador
+            " / " (com espaços) — NÃO "/". Padrões abaixo devem casar com
+            esse formato; o pattern original "40_RH/Documentos/" era latentemente
+            quebrado e só passava no teste porque o grupo herdava
+            `group_ecm_user` (corrigido em afr_ecm 16.0.2.0.2 / F4.4).
         -->
         <record id="rule_ecm_rh_funcionario_own" model="ir.rule">
             <field name="name">DMS File: RH Funcionário → acesso próprio dossiê (read-only)</field>
             <field name="model_id" ref="dms.model_dms_file"/>
-            <field name="domain_force">['|', ('directory_id.complete_name', 'ilike', '40_RH/Documentos/'), '&amp;', ('directory_id.complete_name', 'ilike', '40_RH/Registros/'), ('directory_id.complete_name', 'ilike', user.employee_id.name or '__NO_MATCH_RH_FUNC__')]</field>
+            <field name="domain_force">['|', ('directory_id.complete_name', 'ilike', '40_RH / Documentos'), '&amp;', ('directory_id.complete_name', 'ilike', '40_RH / Registros'), ('directory_id.complete_name', 'ilike', user.employee_id.name or '__NO_MATCH_RH_FUNC__')]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>

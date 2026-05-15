@@ -22,7 +22,13 @@
         <record id="group_ecm_area_rh_funcionario" model="res.groups">
             <field name="name">ECM / Área RH — Funcionário (próprio dossiê)</field>
             <field name="category_id" ref="module_category_ecm_areas"/>
-            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
+            <!-- F4.4 (afr_ecm 16.0.2.0.2): NÃO implica group_ecm_user.
+                 Implicar group_ecm_user ativava rule_dms_file_ecm_user (regras
+                 ORed entre grupos do mesmo usuário) e funcionário via documentos
+                 internos de TODA a empresa. Mantém apenas dms.group_dms_user
+                 para acesso ao modelo dms.file/dms.directory; o domínio é
+                 restringido por rule_ecm_rh_funcionario_own. -->
+            <field name="implied_ids" eval="[(4, ref('dms.group_dms_user'))]"/>
         </record>
 
         <record id="group_ecm_area_financeiro" model="res.groups">

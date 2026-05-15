@@ -16,10 +16,16 @@
         <field name="perm_inclusive_create" eval="True"/>
         <field name="perm_inclusive_write" eval="True"/>
         <field name="perm_inclusive_unlink" eval="True"/>
+        <!-- F4.4 (afr_ecm 16.0.2.0.2): group_ecm_area_rh_funcionario deixou de
+             implicar group_ecm_user. Para que funcionários ainda passem no ACL do
+             dms.access.group, incluímos o grupo da área aqui. A restrição efectiva
+             continua via ir.rule rule_ecm_rh_funcionario_own (read-only, próprio
+             dossiê + 40_RH/Documentos). -->
         <field name="group_ids" eval="[(6, 0, [
             ref('afr_ecm.group_ecm_user'),
             ref('afr_ecm.group_ecm_manager'),
             ref('afr_ecm.group_ecm_admin'),
+            ref('afr_ecm.group_ecm_area_rh_funcionario'),
         ])]"/>
     </record>
 </odoo>

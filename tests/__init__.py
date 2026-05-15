@@ -5,11 +5,5 @@ from . import test_approval
 from . import test_expiration
 from . import test_ocr
 from . import test_ti_revocation
-from . import test_recall
-from . import test_notivisa
-from . import test_cycle_summary
-from . import test_nc_sla
 from . import test_record_rules_refinement
-from . import test_license_renewal
-from . import test_nc_capa
 from . import test_audit_scope_tree_rule

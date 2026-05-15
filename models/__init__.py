@@ -8,14 +8,6 @@ from . import approval_level
 from . import approval_action
 from . import dms_file
 from . import dms_directory
-from . import dms_file_license_renewal
 from . import hr_employee_revocation
 from . import dms_file_revocation_cron
-from . import nc
-from . import nc_sla_check
-from . import capa
-from . import recall
-from . import dms_file_recall_trigger
-from . import notivisa
-from . import dms_file_cycle_summary
 from . import audit_scope

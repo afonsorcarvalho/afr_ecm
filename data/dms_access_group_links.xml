@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
     <!--
+        ⚠ ARQUIVO DE REFERÊNCIA — NÃO carregado pelo __manifest__.py.
+        Os dms.access.group 29-40 são criados manualmente via UI (não há
+        seed no módulo); os IDs hardcoded abaixo não são fresh-install-safe.
+        Mantido como documentação do setup runtime esperado. Para aplicar,
+        rodar manualmente via shell/MCP após criar os dms.access.group.
+
         Links entre dms.access.group (29-40) e res.groups (group_ecm_area_*).
         Cada dms.access.group recebe a m2m reference ao grupo res.groups correspondente.
 
         IDs esperados (criados em data/dms_access_group_data.xml ou via UI):
-        29: ECM_SGQ
-        30: ECM_Operacao
-        31: ECM_Regulatorio
+        29: ECM_SGQ          (setup runtime — vínculo SGQ fica fora do módulo, ver afr_sgq)
+        30: ECM_Operacao     (setup runtime — vínculo Operação fica fora do módulo, ver afr_sgq)
+        31: ECM_Regulatorio  (setup runtime — vínculo Regulatório fica fora do módulo, ver afr_sgq)
         32: ECM_Comercial
         33: ECM_RH
         34: ECM_RH_Funcionario
@@ -18,21 +24,6 @@
         39: ECM_Diretoria
         40: Auditor_Externo
     -->
-    <function model="dms.access.group" name="write">
-        <value eval="29"/>
-        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_sgq'))]}"/>
-    </function>
-
-    <function model="dms.access.group" name="write">
-        <value eval="30"/>
-        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_operacao'))]}"/>
-    </function>
-
-    <function model="dms.access.group" name="write">
-        <value eval="31"/>
-        <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_regulatorio'))]}"/>
-    </function>
-
     <function model="dms.access.group" name="write">
         <value eval="32"/>
         <value eval="{'group_ids': [(4, ref('afr_ecm.group_ecm_area_comercial'))]}"/>

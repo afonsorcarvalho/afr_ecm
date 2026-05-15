@@ -7,24 +7,6 @@
             <field name="sequence">21</field>
         </record>
 
-        <record id="group_ecm_area_sgq" model="res.groups">
-            <field name="name">ECM / Área SGQ</field>
-            <field name="category_id" ref="module_category_ecm_areas"/>
-            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
-        </record>
-
-        <record id="group_ecm_area_operacao" model="res.groups">
-            <field name="name">ECM / Área Operação</field>
-            <field name="category_id" ref="module_category_ecm_areas"/>
-            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
-        </record>
-
-        <record id="group_ecm_area_regulatorio" model="res.groups">
-            <field name="name">ECM / Área Regulatório</field>
-            <field name="category_id" ref="module_category_ecm_areas"/>
-            <field name="implied_ids" eval="[(4, ref('afr_ecm.group_ecm_user'))]"/>
-        </record>
-
         <record id="group_ecm_area_comercial" model="res.groups">
             <field name="name">ECM / Área Comercial</field>
             <field name="category_id" ref="module_category_ecm_areas"/>
@@ -85,7 +67,6 @@
         <function model="dms.access.group" name="write">
             <function model="dms.access.group" name="search">
                 <value eval="[('name','=','Auditor_Externo')]"/>
-                <value>1</value>
             </function>
             <value eval="{'group_ids': [(6, 0, [ref('afr_ecm.group_ecm_area_auditor')])], 'directory_ids': [(5,)]}"/>
         </function>

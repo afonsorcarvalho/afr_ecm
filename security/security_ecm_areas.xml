@@ -66,7 +66,16 @@
             <field name="category_id" ref="module_category_ecm_areas"/>
             <!-- NÃO implica group_ecm_user (que dá acesso amplo via dms.access.group ECM Padrão).
                  Acesso é exclusivo via Auditor_Externo dms.access.group sincronizado
-                 dinamicamente por audit_scope (_sync_auditor_dms_access_group). -->
+                 dinamicamente por audit_scope (_sync_auditor_dms_access_group).
+
+                 F4.5 (afr_ecm 16.0.2.0.3): implica dms.group_dms_user APENAS para
+                 conceder model-level ACL em dms.file/dms.directory (ir.model.access).
+                 Sem isto, auditor recebia AccessError antes mesmo das ir.rule
+                 serem avaliadas. dms.group_dms_user implica transitivamente
+                 base.group_user (Internal User), exigência para login. Nota:
+                 base.group_user ativa rule_dms_file_public — auditor passa a ver
+                 todos os files com confidentiality='public' (escopo de "public"). -->
+            <field name="implied_ids" eval="[(4, ref('dms.group_dms_user'))]"/>
         </record>
         <!-- Sincroniza Auditor_Externo dms.access.group para vincular ao res.groups
              group_ecm_area_auditor (assim auditor com SÓ esse grupo entra no scope dinâmico) -->

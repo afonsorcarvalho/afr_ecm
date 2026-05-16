@@ -205,12 +205,19 @@ class TestAuditorExternoRule(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
 
+        # F4.5: inclui group_ecm_area_auditor para o auditor passar a ACL global
+        # do dms.access.group (complete_group_ids ⊇ user.groups). Sem isto, mesmo
+        # após auditor implicar dms.group_dms_user, o directory rule global do
+        # OCA dms barra leitura porque o user não está nos group_ids do access_group.
         cls.access_group = cls.env["dms.access.group"].create({
             "name": "F439 Auditor Test Access",
             "perm_create": True,
             "perm_write": True,
             "perm_unlink": True,
-            "group_ids": [(4, cls.env.ref("afr_ecm.group_ecm_user").id)],
+            "group_ids": [(6, 0, [
+                cls.env.ref("afr_ecm.group_ecm_user").id,
+                cls.env.ref("afr_ecm.group_ecm_area_auditor").id,
+            ])],
         })
         cls.storage = cls.env["dms.storage"].create({
             "name": "F439 Auditor Storage",

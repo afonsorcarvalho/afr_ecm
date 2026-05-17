@@ -209,36 +209,23 @@ Novos `action_type` valores em `afr.ecm.audit.log`:
 }
 ```
 
-## Migration `16.0.3.0.0`
+## Migração
 
-`migrations/16.0.3.0.0/pre-migration.py`:
-```python
-def migrate(cr, version):
-    if not version:
-        return
-    cr.execute("""
-        ALTER TABLE dms_file
-        ADD COLUMN IF NOT EXISTS lifecycle_state varchar DEFAULT 'active',
-        ADD COLUMN IF NOT EXISTS legal_hold boolean DEFAULT false,
-        ADD COLUMN IF NOT EXISTS legal_hold_reason text,
-        ADD COLUMN IF NOT EXISTS last_lifecycle_action_date timestamp,
-        ADD COLUMN IF NOT EXISTS last_lifecycle_action_user_id integer,
-        ADD COLUMN IF NOT EXISTS last_lifecycle_action_type varchar;
-    """)
-    cr.execute("""
-        ALTER TABLE afr_ecm_audit_log
-        ADD COLUMN IF NOT EXISTS metadata_snapshot text;
-    """)
-    # Backfill expired
-    cr.execute("""
-        UPDATE dms_file
-        SET lifecycle_state='expired'
-        WHERE expiration_date IS NOT NULL
-          AND expiration_date < CURRENT_DATE
-          AND active = true
-          AND lifecycle_state = 'active';
-    """)
-```
+**Sem script de migration.** Módulo `afr_ecm` ainda não está em produção
+nesta versão; deploys piloto serão tratados como fresh install. ORM do
+Odoo cria colunas automaticamente no `-u afr_ecm` ou `-i afr_ecm`:
+- Novas colunas em `dms.file` (lifecycle_state, legal_hold, …) recebem
+  defaults declarados nos `fields.Selection/Boolean/etc.`
+- Nova coluna `metadata_snapshot` em `afr.ecm.audit.log` fica NULL para
+  rows pré-existentes — sem impacto (só usada por novos entries).
+
+Backfill de `expired` para files vencidos pré-existentes: executado em
+runtime na primeira corrida do cron `_cron_mark_expired` (idempotente).
+Sem necessidade de SQL one-shot.
+
+Quando módulo for a produção (deploy piloto real com dados não
+descartáveis), adicionar script `migrations/<version>/pre-migration.py`
+no momento. Pendência registrada no `TODO.md`.
 
 ## Tests `tests/test_lifecycle.py`
 
@@ -273,7 +260,6 @@ Tag `afr_ecm_lifecycle`.
 - `views/menus_lifecycle.xml` — menu `ECM > Ciclo de Vida`
 - `data/cron_lifecycle_mark_expired.xml`
 - `security/ir.model.access.csv` — adiciona linha wizard
-- `migrations/16.0.3.0.0/pre-migration.py`
 - `tests/test_lifecycle.py`
 
 **Modificados:**
@@ -294,6 +280,7 @@ Tag `afr_ecm_lifecycle`.
 
 - Suite `afr_ecm_lifecycle` 18/18 GREEN
 - Suite `afr_ecm` full mantém 81 passes + 0 failures + 0 errors
-- Migração testada em DB existente (`odoo_ecm_test`) com files vencidos sendo backfilled para `expired`
-- Smoke test manual: admin cria file vencido → cron marca → wizard Archive → wizard Renew → wizard Hard Delete (com justificativa) → audit log inspeccionável
+- Fresh install em DB nova: `-i afr_ecm` cria colunas + cron + menus sem erros
+- Upgrade em `odoo_ecm_test` (DB existente, não-produção): `-u afr_ecm` sem manual ALTER; ORM aplica defaults
+- Smoke test manual: admin cria file vencido → cron marca `expired` → wizard Archive → wizard Renew → wizard Hard Delete (com justificativa) → audit log inspeccionável
 - Documentação: RUNBOOK_DEPLOY.md actualizado com nova menu e fluxos
